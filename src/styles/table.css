@@ -1,0 +1,136 @@
+/* 表格基础样式 */
+.el-table {
+  --el-table-header-text-color: var(--el-text-color-primary);
+  --el-table-text-color: var(--el-text-color-regular);
+  --el-table-border-color: var(--el-border-color-lighter);
+  --el-table-header-bg-color: var(--el-bg-color-overlay);
+  --el-table-row-hover-bg-color: var(--el-fill-color-light);
+  --el-table-current-row-bg-color: var(--el-fill-color);
+  --el-table-header-text-color: var(--el-text-color-primary);
+  --el-table-fixed-box-shadow: var(--el-box-shadow-light);
+  
+  /* 表格边框和圆角 */
+  border-radius: 8px;
+  overflow: hidden;
+  
+  /* 表格单元格样式 */
+  th.el-table__cell {
+    background-color: var(--el-table-header-bg-color);
+    color: var(--el-table-header-text-color);
+    font-weight: 600;
+    border-bottom: 1px solid var(--el-table-border-color);
+  }
+  
+  td.el-table__cell {
+    color: var(--el-table-text-color);
+  }
+  
+  /* 斑马纹样式 */
+  tr.el-table__row--striped td.el-table__cell {
+    background-color: var(--el-fill-color-light);
+  }
+}
+
+/* 深色模式样式 */
+:root[data-theme='dark'] .el-table {
+  /* 深色模式下的变量覆盖 */
+  --el-table-border-color: var(--el-border-color-darker);
+  --el-table-header-bg-color: #2a2a2a;
+  --el-table-bg-color: var(--el-bg-color-overlay);
+  --el-table-tr-bg-color: var(--el-bg-color-overlay);
+  --el-table-row-hover-bg-color: #363636;
+  --el-table-current-row-bg-color: #363636;
+  --el-table-fixed-box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  
+  /* 深色模式下的表格样式 */
+  background-color: var(--el-table-bg-color);
+  
+  /* 表头样式 */
+  th.el-table__cell {
+    background-color: var(--el-table-header-bg-color) !important;
+    border-bottom: 1px solid var(--el-border-color-darker);
+    color: var(--el-color-primary-light-8);
+  }
+  
+  /* 单元格样式 */
+  td.el-table__cell {
+    background-color: var(--el-table-tr-bg-color);
+    border-bottom: 1px solid var(--el-border-color-darker);
+  }
+  
+  /* 斑马纹样式 */
+  tr.el-table__row--striped td.el-table__cell {
+    background-color: #2c2c2c;
+  }
+  
+  /* 鼠标悬停效果 */
+  tr.el-table__row:hover td.el-table__cell {
+    background-color: var(--el-table-row-hover-bg-color);
+  }
+  
+  /* 表格边框 */
+  &::before,
+  &::after {
+    background-color: var(--el-table-border-color);
+  }
+  
+  /* 固定列阴影 */
+  .el-table__fixed-right::before,
+  .el-table__fixed::before {
+    box-shadow: var(--el-table-fixed-box-shadow);
+  }
+  
+  /* 空数据状态 */
+  .el-table__empty-block {
+    background-color: var(--el-table-bg-color);
+    
+    .el-table__empty-text {
+      color: var(--el-text-color-secondary);
+    }
+  }
+}
+
+/* 分页器深色模式样式 */
+:root[data-theme='dark'] .el-pagination {
+  --el-pagination-button-bg-color: #2a2a2a;
+  --el-pagination-hover-color: var(--el-color-primary);
+  
+  .el-pagination__total,
+  .el-pagination__jump {
+    color: var(--el-text-color-regular);
+  }
+  
+  .btn-prev,
+  .btn-next {
+    background-color: var(--el-pagination-button-bg-color);
+    
+    &:disabled {
+      background-color: var(--el-fill-color-darker);
+    }
+  }
+  
+  .el-pager li {
+    background-color: var(--el-pagination-button-bg-color);
+    color: var(--el-text-color-regular);
+    
+    &:hover {
+      color: var(--el-pagination-hover-color);
+    }
+    
+    &.active {
+      background-color: var(--el-color-primary);
+      color: var(--el-color-white);
+    }
+  }
+  
+  .el-pagination__sizes {
+    .el-input {
+      --el-select-bg-color: var(--el-pagination-button-bg-color);
+      
+      .el-input__inner {
+        color: var(--el-text-color-regular);
+        background-color: var(--el-pagination-button-bg-color);
+      }
+    }
+  }
+} 

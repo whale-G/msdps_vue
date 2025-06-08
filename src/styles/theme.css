@@ -1,0 +1,53 @@
+/* 深色模式变量 */
+:root[data-theme='dark'] {
+  --el-bg-color: #1a1a1a;
+  --el-bg-color-overlay: #1d1e1f;
+  --el-bg-color-page: #0a0a0a;
+  --el-text-color-primary: #ffffff;
+  --el-text-color-regular: #e5eaf3;
+  --el-text-color-secondary: #a3a6ad;
+  --el-border-color: #363637;
+  --el-border-color-light: #363637;
+  --el-border-color-lighter: #363637;
+  --el-fill-color: #262727;
+  --el-fill-color-light: #1d1d1d;
+  --el-fill-color-blank: #262727;
+  --el-mask-color: rgba(0, 0, 0, 0.8);
+  --el-mask-color-extra-light: rgba(0, 0, 0, 0.3);
+}
+
+/* 浅色模式变量 */
+:root[data-theme='light'] {
+  --el-bg-color: #ffffff;
+  --el-bg-color-overlay: #ffffff;
+  --el-bg-color-page: #f2f3f5;
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+  --el-text-color-secondary: #909399;
+  --el-border-color: #dcdfe6;
+  --el-border-color-light: #e4e7ed;
+  --el-border-color-lighter: #ebeef5;
+  --el-fill-color: #f0f2f5;
+  --el-fill-color-light: #f5f7fa;
+  --el-fill-color-blank: #ffffff;
+  --el-mask-color: rgba(255, 255, 255, 0.9);
+  --el-mask-color-extra-light: rgba(255, 255, 255, 0.3);
+}
+
+/* 默认使用浅色模式 */
+:root {
+  --el-bg-color: #ffffff;
+  --el-bg-color-overlay: #ffffff;
+  --el-bg-color-page: #f2f3f5;
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+  --el-text-color-secondary: #909399;
+  --el-border-color: #dcdfe6;
+  --el-border-color-light: #e4e7ed;
+  --el-border-color-lighter: #ebeef5;
+  --el-fill-color: #f0f2f5;
+  --el-fill-color-light: #f5f7fa;
+  --el-fill-color-blank: #ffffff;
+  --el-mask-color: rgba(255, 255, 255, 0.9);
+  --el-mask-color-extra-light: rgba(255, 255, 255, 0.3);
+} 

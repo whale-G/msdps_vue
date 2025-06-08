@@ -1,0 +1,28 @@
+# Logs，各种包管理器的调试日志和错误日志
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 所有依赖安装的目录
+node_modules
+# Vue项目的构建输出目录（打包后）
+dist
+# 如果你使用了SSR，这是Vite SSR构建的输出目录
+dist-ssr
+# 通常用于本地环境配置文件（如.env.local）
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

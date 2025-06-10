@@ -134,8 +134,20 @@
       width="460px"
       destroy-on-close
       :close-on-click-modal="false"
+      :show-close="!isForceChangePassword"
+      :close-on-press-escape="!isForceChangePassword"
       class="custom-dialog"
     >
+      <div v-if="isForceChangePassword" class="force-change-notice">
+        <el-alert
+          title="管理员首次登录需要修改密码"
+          type="warning"
+          :closable="false"
+          show-icon
+        >
+          <p>为了保证系统安全，管理员账户首次登录时必须修改初始密码</p>
+        </el-alert>
+      </div>
       <el-form
         :model="passwordForm"
         :rules="passwordRules"
@@ -194,7 +206,7 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="handleCancelPassword">取消</el-button>
+          <el-button @click="handleCancelPassword" v-if="!isForceChangePassword">取消</el-button>
           <el-button type="primary" @click="handleChangePassword" :loading="loading">
             确认修改
           </el-button>
@@ -205,7 +217,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, provide, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, provide, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -325,6 +337,10 @@ const handleCommand = (command) => {
 
 // 处理取消修改密码
 const handleCancelPassword = () => {
+  if (isForceChangePassword.value) {
+    ElMessage.warning('管理员首次登录必须修改密码')
+    return
+  }
   changePasswordVisible.value = false
   passwordForm.oldPassword = ''
   passwordForm.newPassword = ''
@@ -348,14 +364,29 @@ const handleChangePassword = async () => {
         )
         if (result.success) {
           ElMessage.success('密码修改成功')
+          // 如果是强制修改密码，重置状态
+          if (userStore.needsPasswordChange) {
+            userStore.forcePasswordChange = false
+          }
           handleCancelPassword()
+        } else {
+          ElMessage.error(result.message || '密码修改失败')
         }
+      } catch (error) {
+        ElMessage.error('修改密码时发生错误')
       } finally {
         loading.value = false
       }
     }
   })
 }
+
+// 监听强制修改密码状态
+watch(() => userStore.needsPasswordChange, (newValue) => {
+  if (newValue) {
+    changePasswordVisible.value = true
+  }
+})
 
 // 获取当前页面的处理数据
 const currentData = computed(() => {
@@ -466,12 +497,19 @@ onMounted(() => {
   })
 
   document.addEventListener('keydown', handleKeydown)
+
+  // 组件挂载时检查是否需要强制修改密码
+  if (userStore.needsPasswordChange) {
+    changePasswordVisible.value = true
+  }
 })
 
 // 组件卸载时移除事件监听
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
+
+const isForceChangePassword = computed(() => userStore.needsPasswordChange)
 </script>
 
 <style scoped>
@@ -962,5 +1000,19 @@ onUnmounted(() => {
   font-size: 12px;
   color: #909399;
   line-height: 1.4;
+}
+
+.force-change-notice {
+  margin-bottom: 20px;
+}
+
+.force-change-notice .el-alert {
+  margin-bottom: 0;
+}
+
+.force-change-notice p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #666;
 }
 </style> 

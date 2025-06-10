@@ -7,6 +7,7 @@ export const useUserStore = defineStore('user', {
     userInfo: null,
     token: null,
     refreshToken: null,
+    forcePasswordChange: false,
     settings: {
       floatParameter: 0.05,
       fileNameFormat: 'type_date',
@@ -23,7 +24,9 @@ export const useUserStore = defineStore('user', {
     getSettings: (state) => state.settings,
     // 获取用户头像
     getUserAvatar: (state) => state.userInfo?.avatar,
-    isAdmin: (state) => state.userInfo?.isAdmin || false
+    isAdmin: (state) => state.userInfo?.isAdmin || false,
+    // 只有管理员账户且force_password_change为true时才需要强制修改密码
+    needsPasswordChange: (state) => state.userInfo?.isAdmin && state.forcePasswordChange
   },
 
   actions: {
@@ -150,12 +153,22 @@ export const useUserStore = defineStore('user', {
           const userInfo = {
             username: userAccount,
             account: userAccount,
-            // 如果是内置管理员账号，设置isAdmin为true
             isAdmin: userAccount === 'admin'
           }
           this.setUserInfo(userInfo)
           
-          return { success: true, message: result.message || '登录成功' }
+          // 只有管理员账户才设置强制修改密码状态
+          if (userAccount === 'admin') {
+            this.forcePasswordChange = result.force_password_change || false
+          } else {
+            this.forcePasswordChange = false
+          }
+          
+          return { 
+            success: true, 
+            message: result.message || '登录成功',
+            forcePasswordChange: this.forcePasswordChange
+          }
         }
         
         // 如果服务器返回了错误信息，直接使用

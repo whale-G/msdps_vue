@@ -99,45 +99,60 @@
       </template>
 
       <div class="result-content">
-        <div class="table-wrapper">
-          <el-table
-            v-if="currentTableData && currentTableData.length > 0"
-            :data="paginatedData"
-            border
-            stripe
-            size="small"
-            style="width: 100%"
-            class="data-table"
-            height="calc(100vh - 280px)"
-          >
-            <el-table-column
-              v-for="(value, key) in currentTableData[0]"
-              :key="key"
-              :prop="key"
-              :label="key"
-              :min-width="getColumnWidth(key)"
-              show-overflow-tooltip
-              align="center"
-            />
-          </el-table>
-          
-          <div class="pagination-container" v-if="currentTableData && currentTableData.length > 0">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :total="currentTableData.length"
-              layout="total, sizes, prev, pager, next, jumper"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-              background
-            />
+        <slot 
+          name="result-table" 
+          :current-data="currentTableData"
+          :active-tab="activeTab"
+          :process-result="processResult"
+          :selected-type="selectedType"
+          :pagination="{
+            currentPage,
+            pageSize,
+            handleSizeChange,
+            handleCurrentChange
+          }"
+        >
+          <!-- 默认表格渲染，当没有提供自定义插槽时使用 -->
+          <div class="table-wrapper">
+            <el-table
+              v-if="currentTableData && currentTableData.length > 0"
+              :data="paginatedData"
+              border
+              stripe
+              size="small"
+              style="width: 100%"
+              class="data-table"
+              height="calc(100vh - 280px)"
+            >
+              <el-table-column
+                v-for="(value, key) in currentTableData[0]"
+                :key="key"
+                :prop="key"
+                :label="key"
+                :min-width="getColumnWidth(key)"
+                show-overflow-tooltip
+                align="center"
+              />
+            </el-table>
+            
+            <div class="pagination-container" v-if="currentTableData && currentTableData.length > 0">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :total="currentTableData.length"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+                background
+              />
+            </div>
           </div>
-        </div>
 
-        <div v-if="!currentTableData || currentTableData.length === 0" class="no-data">
-          <el-empty description="暂无数据" />
-        </div>
+          <div v-if="!currentTableData || currentTableData.length === 0" class="no-data">
+            <el-empty description="暂无数据" />
+          </div>
+        </slot>
       </div>
     </el-card>
   </div>
@@ -162,6 +177,10 @@ const props = defineProps({
   processFunction: {
     type: Function,
     required: true
+  },
+  handleResultData: {
+    type: Function,
+    default: (result) => result
   }
 })
 
@@ -212,13 +231,21 @@ watch(currentTask, (newTask, oldTask) => {
 
 // 计算当前显示的表格数据
 const currentTableData = computed(() => {
+  // 如果没有处理结果，返回空数组
   if (!processResult.value) return []
   
+  // 如果选择的是最终结果，返回汇总结果
   if (activeTab.value === 'final') {
+    console.log('processResult.value.total_result:', processResult.value.total_result[0])
     return processResult.value.total_result || []
   } else {
+    // 如果是单个文件的标签页，从标签页名称中提取文件索引
+    // 例如：'file0' -> 0, 'file1' -> 1
     const index = parseInt(activeTab.value.replace('file', ''))
+    // 如果索引无效或该索引的结果不存在，返回空数组
     if (isNaN(index) || !processResult.value.single_results[index]) return []
+    // 返回对应文件的处理结果
+    console.log('processResult.value.single_results[index]:', processResult.value.single_results[index])
     return processResult.value.single_results[index] || []
   }
 })
@@ -361,10 +388,13 @@ const submitUpload = async () => {
     // 调用处理函数
     const result = await props.processFunction(files, selectedType.value, taskId)
     
+    // 使用自定义的数据处理函数处理返回结果
+    const processedResult = props.handleResultData(result)
+    
     // 设置任务结果并更新页面状态
-    processStore.setTaskResult(taskId, result)
-    processStore.setPageData(route.name, result)
-    processResult.value = result
+    processStore.setTaskResult(taskId, processedResult)
+    processStore.setPageData(route.name, processedResult)
+    processResult.value = processedResult
     hasFiles.value = true
     ElMessage.success('处理完成')
   } catch (error) {

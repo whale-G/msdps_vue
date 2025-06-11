@@ -2,7 +2,7 @@ import request from '@/utils/request'
 import { useProcessStore } from '@/stores/process'
 
 // 气相类型文件处理
-export function processGC(files, type, taskId) {
+export function processGC(files, taskId) {
   const processStore = useProcessStore()
   const formData = new FormData()
   // 确保files是数组

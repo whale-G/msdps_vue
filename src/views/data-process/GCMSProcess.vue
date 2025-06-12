@@ -100,8 +100,12 @@
 import FileUpload from '@/components/FileUpload.vue'
 import { processShimazuGCMS, processThermoGCMS } from '@/api/DocProcess'
 import { useUserStore } from '@/stores/user'
+import { useProcessStore } from '@/stores/process'
+import { useRoute } from 'vue-router'
 
 const userStore = useUserStore()
+const processStore = useProcessStore()
+const route = useRoute()
 
 // 仪器类型选项
 const typeOptions = [
@@ -272,10 +276,16 @@ const handleShimazuData = (result, selectedType) => {
   }
 }
 
-// 安全的数值转换函数
+// 格式化 Area 值
+const formatArea = (value) => {
+  if (value === 'ND' || value === undefined) return 'ND'
+  return Number(value).toFixed(2)
+}
+
+// 安全的数值转换函数（用于处理热电气质数据）
 const safeNumberConvert = (value, precision = 3) => {
-  if (value === undefined || value === null || value === '' || value === 'NA' || value === 'ND') {
-    return undefined
+  if (value === "ND" || value === null || value === '') {
+    return "ND"
   }
   // 移除可能的空格
   const cleanValue = String(value).trim()
@@ -291,6 +301,8 @@ const safeNumberConvert = (value, precision = 3) => {
 
 // 处理热电气质数据
 const handleThermoData = (result, selectedType) => {
+  console.log('handleThermoData called with result:', result.total_result[0])
+  console.log('handleThermoData called with result:', result.single_results[0][0])
   if (!result || !result.single_results || !result.total_result) 
     return result
 
@@ -362,12 +374,6 @@ const handleThermoData = (result, selectedType) => {
     console.error('数据处理错误:', error)
     return result
   }
-}
-
-// 格式化 Area 值
-const formatArea = (value) => {
-  if (value === 'ND' || value === undefined) return 'ND'
-  return Number(value).toFixed(2)
 }
 
 // 获取文件名列表
@@ -479,14 +485,6 @@ const COLUMN_ORDER = {
 
 // 获取表格列配置
 const getTableColumns = (selectedType = 'shimazu-2010&8050') => {
-  // console.log('getTableColumns called with selectedType:', selectedType)
-  
-  // 如果selectedType无效，使用默认值
-  // if (!selectedType || !COLUMN_CONFIGS[selectedType]) {
-  //   console.warn('Invalid selectedType, using default:', selectedType)
-  //   selectedType = 'shimazu-2010&8050'
-  // }
-
   // 初始化返回对象
   const baseColumns = {
     single: [],
@@ -494,17 +492,22 @@ const getTableColumns = (selectedType = 'shimazu-2010&8050') => {
   }
 
   try {
+    // 如果没有提供selectedType，尝试从store中获取
+    if (!selectedType) {
+      const savedType = processStore.getCurrentPageSelectedType(route.name)
+      if (savedType) {
+        selectedType = savedType
+      }
+    }
+
     // 获取当前仪器类型的配置和列顺序
     const currentConfig = COLUMN_CONFIGS[selectedType]
     const currentOrder = COLUMN_ORDER[selectedType]
 
     if (!currentConfig || !currentOrder) {
-      // console.error('Missing configuration for type:', selectedType)
+      console.warn(`Missing configuration for type: ${selectedType}`)
       return baseColumns
     }
-
-    // console.log('Current config:', currentConfig)
-    // console.log('Current order:', currentOrder)
 
     // 分别处理 single 和 final 的列配置
     // 处理 single 类型的列
@@ -512,13 +515,13 @@ const getTableColumns = (selectedType = 'shimazu-2010&8050') => {
       baseColumns.single = currentOrder.single.map(columnName => {
         const config = currentConfig[columnName]
         if (!config) {
-          // console.warn(`Missing column config for single: ${columnName}`)
+          console.warn(`Missing column config for single: ${columnName}`)
           return null
         }
         return { ...config }
       }).filter(Boolean) // 移除空值
     } else {
-      // console.warn('Invalid single column order configuration')
+      console.warn('Invalid single column order configuration')
     }
 
     // 处理 final 类型的列
@@ -529,7 +532,7 @@ const getTableColumns = (selectedType = 'shimazu-2010&8050') => {
         
         const config = currentConfig[columnName]
         if (!config) {
-          // console.warn(`Missing column config for final: ${columnName}`)
+          console.warn(`Missing column config for final: ${columnName}`)
           return null
         }
         return { ...config }
@@ -538,14 +541,9 @@ const getTableColumns = (selectedType = 'shimazu-2010&8050') => {
       console.warn('Invalid final column order configuration')
     }
 
-    // 打印生成的列配置
-    // console.log('Generated single columns:', baseColumns.single)
-    // console.log('Generated final columns:', baseColumns.final)
-    console.log('baseColumns:', baseColumns)
-
     return baseColumns
   } catch (error) {
-    // console.error('Error in getTableColumns:', error)
+    console.error('Error in getTableColumns:', error)
     return baseColumns
   }
 }

@@ -19,6 +19,13 @@ export const useProcessStore = defineStore('process', {
       'lc-process': false,
       'lcms-process': false
     },
+    // 存储每个页面的选择类型
+    pageSelectedType: {
+      'gc-process': '',
+      'gcms-process': '',
+      'lc-process': '',
+      'lcms-process': ''
+    },
     // 任务队列
     tasks: {},
     // 存储处理请求
@@ -35,6 +42,10 @@ export const useProcessStore = defineStore('process', {
     // 获取当前页面的状态
     getCurrentPageStatus: (state) => (pageName) => {
       return state.pageStatus[pageName]
+    },
+    // 获取当前页面的选择类型
+    getCurrentPageSelectedType: (state) => (pageName) => {
+      return state.pageSelectedType[pageName]
     },
     // 获取活动任务列表
     getActiveTasks: (state) => {
@@ -156,10 +167,13 @@ export const useProcessStore = defineStore('process', {
     },
 
     // 设置页面数据
-    setPageData(pageName, data) {
+    setPageData(pageName, data, selectedType) {
       if (this.pageData.hasOwnProperty(pageName)) {
         this.pageData[pageName] = data
         this.pageStatus[pageName] = true
+        if (selectedType) {
+          this.pageSelectedType[pageName] = selectedType
+        }
         this.lastActivePage = pageName
         this.persistState()
       }
@@ -170,6 +184,7 @@ export const useProcessStore = defineStore('process', {
       if (this.pageData.hasOwnProperty(pageName)) {
         this.pageData[pageName] = null
         this.pageStatus[pageName] = false
+        this.pageSelectedType[pageName] = ''
         if (this.lastActivePage === pageName) {
           this.lastActivePage = null
         }
@@ -198,6 +213,7 @@ export const useProcessStore = defineStore('process', {
       Object.keys(this.pageData).forEach(key => {
         this.pageData[key] = null
         this.pageStatus[key] = false
+        this.pageSelectedType[key] = ''
       })
       this.tasks = {}
       this.lastActivePage = null

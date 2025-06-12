@@ -219,15 +219,36 @@ watch(currentTask, (newTask, oldTask) => {
       hasFiles.value = false
       processResult.value = null
     }
-  } else if (!newTask && oldTask?.status === 'completed') {
-    // 任务被清除，但之前是完成状态，检查当前页面的保存结果
-    const savedResult = processStore.getCurrentPageData(route.name)
+  }
+}, { deep: true })
+
+// 监听路由变化，恢复数据
+watch(() => route.name, (newRoute) => {
+  if (newRoute) {
+    const savedResult = processStore.getCurrentPageData(newRoute)
+    const savedType = processStore.getCurrentPageSelectedType(newRoute)
     if (savedResult) {
       processResult.value = savedResult
       hasFiles.value = true
+      selectedType.value = savedType
+    } else {
+      processResult.value = null
+      hasFiles.value = false
+      selectedType.value = ''
     }
   }
-}, { deep: true, immediate: true })
+}, { immediate: true })
+
+// 组件挂载时恢复数据
+onMounted(() => {
+  const savedResult = processStore.getCurrentPageData(route.name)
+  const savedType = processStore.getCurrentPageSelectedType(route.name)
+  if (savedResult) {
+    processResult.value = savedResult
+    hasFiles.value = true
+    selectedType.value = savedType
+  }
+})
 
 // 计算当前显示的表格数据
 const currentTableData = computed(() => {
@@ -389,11 +410,11 @@ const submitUpload = async () => {
     const result = await props.processFunction(files, selectedType.value, taskId)
     
     // 使用自定义的数据处理函数处理返回结果
-    const processedResult = props.handleResultData(result)
+    const processedResult = props.handleResultData(result, selectedType.value)
     
     // 设置任务结果并更新页面状态
     processStore.setTaskResult(taskId, processedResult)
-    processStore.setPageData(route.name, processedResult)
+    processStore.setPageData(route.name, processedResult, selectedType.value)
     processResult.value = processedResult
     hasFiles.value = true
     ElMessage.success('处理完成')
@@ -402,29 +423,6 @@ const submitUpload = async () => {
     ElMessage.error(error.message || '处理失败')
   }
 }
-
-// 组件挂载时检查是否有未完成的任务或已完成的结果
-onMounted(() => {
-  // 检查是否有活动任务
-  const task = processStore.getActiveTasks.find(task => task.type === route.name)
-  if (task) {
-    if (task.status === 'completed' && task.result) {
-      // 如果任务已完成且有结果，显示结果
-      processResult.value = task.result
-      hasFiles.value = true
-    } else {
-      // 如果任务未完成，显示提示
-      ElMessage.info('检测到未完成的处理任务')
-    }
-  } else {
-    // 如果没有活动任务，检查是否有已保存的结果
-    const savedResult = processStore.getCurrentPageData(route.name)
-    if (savedResult) {
-      processResult.value = savedResult
-      hasFiles.value = true
-    }
-  }
-})
 
 // 组件卸载时清理状态
 onBeforeUnmount(() => {

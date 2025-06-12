@@ -36,28 +36,30 @@ export const useUserStore = defineStore('user', {
         // 从localStorage获取存储的数据
         const storedData = localStorage.getItem('msdpt-user')
         if (storedData) {
-          const { token, refreshToken, userInfo, settings } = JSON.parse(storedData)
+          const parsedData = JSON.parse(storedData)
           
           // 恢复token
-          if (token) {
-            this.token = token
+          if (parsedData.token) {
+            this.token = parsedData.token
+            localStorage.setItem('access_token', parsedData.token)
           }
           
           // 恢复refreshToken
-          if (refreshToken) {
-            this.refreshToken = refreshToken
+          if (parsedData.refreshToken) {
+            this.refreshToken = parsedData.refreshToken
+            localStorage.setItem('refresh_token', parsedData.refreshToken)
           }
           
           // 恢复用户信息
-          if (userInfo) {
-            this.userInfo = userInfo
+          if (parsedData.userInfo) {
+            this.setUserInfo(parsedData.userInfo)
           }
           
           // 恢复设置
-          if (settings) {
+          if (parsedData.settings) {
             this.settings = {
-              ...this.settings,
-              ...settings
+              ...this.settings,  // 保持默认值
+              ...parsedData.settings  // 覆盖存储的值
             }
           }
         }
@@ -89,11 +91,20 @@ export const useUserStore = defineStore('user', {
     },
 
     setUserInfo(userInfo) {
-      // 如果没有头像，分配一个随机头像
-      if (!userInfo.avatar) {
-        userInfo.avatar = getRandomAvatar()
+      if (!userInfo || !userInfo.account) {
+        console.warn('setUserInfo: Invalid user info')
+        return
       }
-      this.userInfo = userInfo
+      
+      // 创建一个新的用户信息对象，确保包含所有必要字段
+      const processedUserInfo = {
+        username: userInfo.username || userInfo.account,
+        account: userInfo.account,
+        isAdmin: userInfo.isAdmin || userInfo.account === 'admin' || false,
+        avatar: userInfo.avatar || getRandomAvatar()
+      }
+
+      this.userInfo = processedUserInfo
       this.updateLoginTime()
       this.persistState()
     },
@@ -149,11 +160,12 @@ export const useUserStore = defineStore('user', {
         if (result.status === 'success' && result.access && result.refresh) {
           this.setTokens(result.access, result.refresh)
           
-          // 设置用户信息，添加内置管理员判断
+          // 创建完整的用户信息对象
           const userInfo = {
             username: userAccount,
             account: userAccount,
-            isAdmin: userAccount === 'admin'
+            isAdmin: userAccount === 'admin',
+            avatar: getRandomAvatar() // 确保新用户有头像
           }
           this.setUserInfo(userInfo)
           

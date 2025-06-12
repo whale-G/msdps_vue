@@ -37,13 +37,48 @@ onMounted(() => {
   // 初始化用户状态
   userStore.initializeStore()
   
-  // 恢复处理状态
-  if (userStore.isLoggedIn) {
-    processStore.restoreTaskState()
-  }
+  // 检查localStorage中的token
+  const token = localStorage.getItem('access_token')
+  const refreshToken = localStorage.getItem('refresh_token')
+  const storedUserData = localStorage.getItem('msdpt-user')
   
-  // 如果没有token，重定向到登录页
-  if (!userStore.isLoggedIn && router.currentRoute.value.path !== '/login') {
+  if (token && refreshToken && storedUserData) {
+    try {
+      const userData = JSON.parse(storedUserData)
+      
+      // 恢复token
+      userStore.setTokens(token, refreshToken)
+      
+      // 恢复用户信息（即使userInfo为空也会创建默认值）
+      if (userData) {
+        // 如果有用户信息，则使用存储的用户信息
+        if (userData.userInfo && userData.userInfo.account) {
+          userStore.setUserInfo(userData.userInfo)
+        } else {
+          // 如果没有有效的用户信息，清除状态并重定向到登录页
+          userStore.clearUserData()
+          processStore.clearAllState()
+          router.push('/login')
+          return
+        }
+        
+        // 恢复设置
+        if (userData.settings) {
+          userStore.updateSettings(userData.settings)
+        }
+        
+        // 恢复处理状态
+        processStore.restoreTaskState()
+      }
+    } catch (error) {
+      console.error('恢复用户状态失败:', error)
+      // 如果恢复失败，清除所有状态并重定向到登录页
+      userStore.clearUserData()
+      processStore.clearAllState()
+      router.push('/login')
+    }
+  } else if (!userStore.isLoggedIn && router.currentRoute.value.path !== '/login') {
+    // 如果没有token或用户未登录，重定向到登录页
     router.push('/login')
   }
 })

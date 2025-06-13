@@ -4,229 +4,159 @@
       :type-options="typeOptions"
       :process-function="handleProcess"
       :handle-result-data="handleResultData"
+      :accepted-file-types="{
+        'ab': '.docx',
+        'agilent-6470': '.xlsx,.xls',
+        'default': '.xlsx,.xls'
+      }"
     >
-      <!-- 自定义表格渲染 -->
-      <template #result-table="{ currentData, pagination, activeTab }">
+      <template #result-table="{ currentData, pagination, activeTab, processResult, selectedType }">
         <div class="table-wrapper">
-          <el-table
-            v-if="currentData && currentData.length > 0"
-            :data="currentData.slice(
-              (pagination.currentPage - 1) * pagination.pageSize,
-              pagination.currentPage * pagination.pageSize
-            )"
-            border
-            stripe
-            size="small"
-            style="width: 100%"
-            class="data-table"
-            height="calc(100vh - 280px)"
-          >
-            <!-- 根据activeTab显示不同的表格结构 -->
-            <template v-if="activeTab === 'final'">
-              <!-- 汇总结果表格结构 -->
-              <el-table-column label="汇总信息" align="center">
-                <el-table-column
-                  prop="检测项目"
-                  label="检测项目"
-                  min-width="150"
-                  fixed="left"
-                />
-                <el-table-column
-                  prop="样品数量"
-                  label="样品数量"
-                  min-width="100"
-                />
-              </el-table-column>
+          <!-- ab类型多级表头渲染 -->
+          <template v-if="selectedType === 'ab' && processResult && processResult.single_results">
+            <el-table
+              v-if="currentData && currentData.length > 0"
+              :data="currentData.slice((pagination.currentPage - 1) * pagination.pageSize, pagination.currentPage * pagination.pageSize)"
+              border
+              stripe
+              size="small"
+              style="width: 100%"
+              class="data-table"
+              height="calc(100vh - 280px)"
+            >
+              <!-- 序号列 -->
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                align="center"
+                fixed="left"
+              />
 
-              <el-table-column label="色谱统计" align="center">
-                <el-table-column
-                  prop="平均保留时间"
-                  label="平均保留时间"
-                  min-width="120"
-                />
-                <el-table-column
-                  prop="峰面积RSD"
-                  label="峰面积RSD(%)"
-                  min-width="120"
-                />
-              </el-table-column>
+              <!-- 固定列 -->
+              <el-table-column
+                :prop="AB_FIELD_MAP['Sample Name']"
+                :label="AB_FIELD_MAP['Sample Name']"
+                min-width="100"
+                fixed="left"
+              />
+              <el-table-column
+                :prop="AB_FIELD_MAP['Sample Type']"
+                :label="AB_FIELD_MAP['Sample Type']"
+                min-width="100"
+                fixed="left"
+              />
+              <el-table-column
+                :prop="AB_FIELD_MAP['Target  [Conc]. (ng/ml)']"
+                :label="AB_FIELD_MAP['Target  [Conc]. (ng/ml)']"
+                min-width="80"
+                fixed="left"
+              />
 
-              <el-table-column label="质谱统计" align="center">
-                <el-table-column label="离子对">
+              <!-- 化合物多级列 -->
+              <template v-if="currentData && currentData[0]">
+                <el-table-column
+                  v-for="compound in getCompoundList(currentData[0])"
+                  :key="compound"
+                  :label="compound"
+                  align="center"
+                >
                   <el-table-column
-                    prop="前体离子"
-                    label="Q1"
-                    min-width="80"
-                  />
+                    :prop="`${compound}.峰面积（cps）`"
+                    label="峰面积（cps）"
+                    min-width="100"
+                    align="center"
+                  >
+                    <template #default="scope">
+                      {{ scope.row[compound]?.['峰面积（cps）'] }}
+                    </template>
+                  </el-table-column>
                   <el-table-column
-                    prop="子离子"
-                    label="Q3"
+                    :prop="`${compound}.RT`"
+                    label="RT"
                     min-width="80"
-                  />
-                </el-table-column>
-                <el-table-column
-                  prop="平均离子丰度"
-                  label="平均离子丰度"
-                  min-width="120"
-                />
-                <el-table-column
-                  prop="离子丰度RSD"
-                  label="离子丰度RSD(%)"
-                  min-width="120"
-                />
-              </el-table-column>
-
-              <el-table-column label="定量统计" align="center">
-                <el-table-column
-                  prop="平均响应值"
-                  label="平均响应值"
-                  min-width="120"
-                />
-                <el-table-column
-                  prop="响应值RSD"
-                  label="响应值RSD(%)"
-                  min-width="120"
-                />
-                <el-table-column
-                  prop="平均浓度"
-                  label="平均浓度"
-                  min-width="120"
-                />
-                <el-table-column
-                  prop="浓度RSD"
-                  label="浓度RSD(%)"
-                  min-width="100"
-                />
-              </el-table-column>
-
-              <el-table-column label="判定" align="center">
-                <el-table-column
-                  prop="合格率"
-                  label="合格率"
-                  min-width="100"
-                >
-                  <template #default="scope">
-                    <span>{{ scope.row.合格率 }}%</span>
-                  </template>
-                </el-table-column>
-              </el-table-column>
-            </template>
-
-            <template v-else>
-              <!-- 样品信息 -->
-              <el-table-column label="样品信息" align="center">
-                <el-table-column
-                  prop="样品编号"
-                  label="样品编号"
-                  min-width="120"
-                  fixed="left"
-                />
-                <el-table-column
-                  prop="检测项目"
-                  label="检测项目"
-                  min-width="150"
-                />
-              </el-table-column>
-
-              <!-- 色谱信息 -->
-              <el-table-column label="色谱信息" align="center">
-                <el-table-column
-                  prop="保留时间"
-                  label="保留时间"
-                  min-width="100"
-                >
-                  <template #default="scope">
-                    <span>{{ scope.row.保留时间 }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  prop="峰面积"
-                  label="峰面积"
-                  min-width="120"
-                >
-                  <template #default="scope">
-                    <span>{{ scope.row.峰面积 }}</span>
-                  </template>
-                </el-table-column>
-              </el-table-column>
-
-              <!-- 质谱信息 -->
-              <el-table-column label="质谱信息" align="center">
-                <el-table-column label="离子对">
+                    align="center"
+                  >
+                    <template #default="scope">
+                      {{ scope.row[compound]?.['RT'] }}
+                    </template>
+                  </el-table-column>
                   <el-table-column
-                    prop="前体离子"
-                    label="Q1"
+                    :prop="`${compound}.计算浓度（ng/ml）`"
+                    label="计算浓度（ng/ml）"
                     min-width="80"
-                  />
-                  <el-table-column
-                    prop="子离子"
-                    label="Q3"
-                    min-width="80"
-                  />
+                    align="center"
+                  >
+                    <template #default="scope">
+                      {{ scope.row[compound]?.['计算浓度（ng/ml）'] }}
+                    </template>
+                  </el-table-column>
                 </el-table-column>
-                <el-table-column
-                  prop="离子丰度"
-                  label="离子丰度"
-                  min-width="100"
-                >
-                  <template #default="scope">
-                    <span>{{ scope.row.离子丰度 }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  prop="相对丰度"
-                  label="相对丰度"
-                  min-width="100"
-                >
-                  <template #default="scope">
-                    <span>{{ scope.row.相对丰度 }}</span>
-                  </template>
-                </el-table-column>
-              </el-table-column>
+              </template>
+            </el-table>
+          </template>
 
-              <!-- 定量结果 -->
-              <el-table-column label="定量结果" align="center">
+          <!-- agilent-6470类型动态表头渲染 -->
+          <template v-else-if="selectedType === 'agilent-6470' && processResult && processResult.single_results">
+            <el-table
+              v-if="currentData && currentData.length > 0"
+              :data="currentData"
+              border
+              stripe
+              size="small"
+              style="width: 100%"
+              class="data-table"
+              height="calc(100vh - 280px)"
+            >
+              <!-- 序号列 -->
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                align="center"
+                fixed="left"
+              />
+
+              <!-- 固定列 -->
+              <el-table-column
+                prop="样品名称"
+                label="样品名称"
+                min-width="120"
+                fixed="left"
+              />
+              <el-table-column
+                prop="样品类型"
+                label="样品类型"
+                min-width="100"
+                fixed="left"
+              />
+
+              <!-- 动态化合物列 -->
+              <template v-if="currentData[0]">
                 <el-table-column
-                  prop="响应值"
-                  label="响应值"
-                  min-width="120"
-                >
-                  <template #default="scope">
-                    <span>{{ scope.row.响应值 }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  prop="浓度"
-                  label="浓度"
+                  v-for="compound in Object.keys(currentData[0]).filter(key => key !== '样品名称' && key !== '样品类型' && key !== '单位')"
+                  :key="compound"
+                  :prop="compound"
+                  :label="compound"
                   min-width="100"
-                >
-                  <template #default="scope">
-                    <span>{{ scope.row.浓度 }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  prop="单位"
-                  label="单位"
-                  min-width="80"
+                  align="center"
                 />
-              </el-table-column>
+              </template>
 
-              <!-- 判定结果 -->
-              <el-table-column label="判定" align="center">
-                <el-table-column
-                  prop="状态"
-                  label="结果"
-                  min-width="80"
-                >
-                  <template #default="scope">
-                    <el-tag :type="scope.row.状态 === '合格' ? 'success' : 'danger'">
-                      {{ scope.row.状态 }}
-                    </el-tag>
-                  </template>
-                </el-table-column>
-              </el-table-column>
-            </template>
-          </el-table>
+              <!-- 单位列 -->
+              <el-table-column
+                prop="单位"
+                label="单位"
+                min-width="80"
+                align="center"
+              />
+            </el-table>
+          </template>
+
+          <!-- 无数据时显示 -->
+          <div v-if="!currentData || currentData.length === 0" class="no-data">
+            <el-empty description="暂无数据" />
+          </div>
 
           <!-- 分页器 -->
           <div class="pagination-container" v-if="currentData && currentData.length > 0">
@@ -240,11 +170,6 @@
               @current-change="pagination.handleCurrentChange"
               background
             />
-          </div>
-
-          <!-- 无数据时显示 -->
-          <div v-if="!currentData || currentData.length === 0" class="no-data">
-            <el-empty description="暂无数据" />
           </div>
         </div>
       </template>
@@ -267,6 +192,7 @@ const typeOptions = [
   }
 ]
 
+// 调用接口，发送处理请求
 const handleProcess = async (files, selectedType, taskId) => {
   if (selectedType === 'ab') {
     return processABLCMS(files, taskId)
@@ -277,129 +203,118 @@ const handleProcess = async (files, selectedType, taskId) => {
   }
 }
 
-// 自定义数据处理逻辑
-const handleResultData = (result) => {
-  // 检查数据是否存在
-  if (!result || !result.single_results || !result.total_result) 
-    return result
-
-  // 处理单个文件的结果
-  const processedSingleResults = result.single_results.map(fileResult => {
-    return fileResult.map(item => ({
-      ...item,
-      // 格式化各项数据
-      保留时间: formatRetentionTime(item.保留时间),
-      峰面积: formatPeakArea(item.峰面积),
-      离子丰度: formatIonAbundance(item.离子丰度),
-      响应值: formatResponse(item.响应值),
-      浓度: formatConcentration(item.浓度),
-      // 添加计算字段
-      相对丰度: calculateRelativeAbundance(item),
-      // 添加状态判断
-      状态: Number(item.浓度) > 0.5 ? '合格' : '不合格'
-    }))
-  })
-
-  // 处理汇总结果
-  const processedTotalResult = result.total_result?.map(item => {
-    // 获取该检测项目的所有样品数据
-    const samples = result.single_results.flat().filter(r => r.检测项目 === item.检测项目)
-    
-    // 计算各项统计数据
-    const retentionTimes = samples.map(s => Number(s.保留时间))
-    const peakAreas = samples.map(s => Number(s.峰面积))
-    const ionAbundances = samples.map(s => Number(s.离子丰度))
-    const responses = samples.map(s => Number(s.响应值))
-    const concentrations = samples.map(s => Number(s.浓度))
-    
-    // 计算平均值和RSD
-    const avgRetentionTime = calculateAverage(retentionTimes)
-    const peakAreaRSD = calculateRSD(peakAreas)
-    const avgIonAbundance = calculateAverage(ionAbundances)
-    const ionAbundanceRSD = calculateRSD(ionAbundances)
-    const avgResponse = calculateAverage(responses)
-    const responseRSD = calculateRSD(responses)
-    const avgConcentration = calculateAverage(concentrations)
-    const concentrationRSD = calculateRSD(concentrations)
-    
-    // 计算合格率
-    const passCount = samples.filter(s => Number(s.浓度) > 0.5).length
-
-    return {
-      检测项目: item.检测项目,
-      样品数量: samples.length,
-      前体离子: item.前体离子,
-      子离子: item.子离子,
-      平均保留时间: formatRetentionTime(avgRetentionTime),
-      峰面积RSD: peakAreaRSD.toFixed(2),
-      平均离子丰度: formatIonAbundance(avgIonAbundance),
-      离子丰度RSD: ionAbundanceRSD.toFixed(2),
-      平均响应值: formatResponse(avgResponse),
-      响应值RSD: responseRSD.toFixed(2),
-      平均浓度: formatConcentration(avgConcentration),
-      浓度RSD: concentrationRSD.toFixed(2),
-      合格率: ((passCount / samples.length) * 100).toFixed(1)
+// 自定义统一处理接口响应数据函数
+const handleResultData = (result, selectedType) => {
+  try {
+    if (selectedType === 'ab') {
+      const processedData = handleAbData(result)
+      return {
+        single_results: processedData,  // 直接返回处理后的数据数组，每个元素代表一个文件的数据
+        total_result: null              // ab类型没有total_result
+      }
+    } else if (selectedType === 'agilent-6470') {
+      return handleAgilentData(result)
+    } else {
+      return { single_results: [], total_result: null }
     }
-  })
-
-  return {
-    ...result,
-    single_results: processedSingleResults,
-    total_result: processedTotalResult
+  } catch (error) {
+    console.error('数据处理错误:', error)
+    return { single_results: [], total_result: null }
   }
 }
 
-// 辅助函数：计算平均值
-const calculateAverage = (values) => {
-  if (!values || values.length === 0) return 0
-  return values.reduce((a, b) => a + b, 0) / values.length
+// ab字段映射
+const AB_FIELD_MAP = {
+  'Sample Name': '样品名称',
+  'Sample Type': '样品类型',
+  'Area (cps)': '峰面积（cps）',
+  'RT (min)': 'RT',
+  'Target  [Conc]. (ng/ml)': '目标浓度（ng/ml）',
+  '[Calculated Conc]. (ng/ml)': '计算浓度（ng/ml）'
 }
 
-// 辅助函数：计算相对标准偏差(RSD)
-const calculateRSD = (values) => {
-  if (!values || values.length === 0) return 0
-  const avg = calculateAverage(values)
-  const squareDiffs = values.map(value => Math.pow(value - avg, 2))
-  const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length
-  const stdDev = Math.sqrt(avgSquareDiff)
-  return (stdDev / avg) * 100
+// 处理ab类型数据
+function handleAbData(result) {
+  if (!result || !result.single_results) return []
+  
+  // 处理每个文件的结果，保持每个文件数据的独立性
+  const processedResults = result.single_results.map(fileResult => {
+    if (!fileResult.compound_list || !fileResult.data) return []
+
+    // 获取样品数据数组（第一个化合物的数据，用于获取基础信息）
+    const sampleDataArray = fileResult.data[0]
+    
+    // 处理每个样品的数据
+    const fileData = sampleDataArray.map((sampleData, sampleIndex) => {
+      // 基础固定字段
+      const baseData = {
+        [AB_FIELD_MAP['Sample Name']]: sampleData['Sample Name'],
+        [AB_FIELD_MAP['Sample Type']]: sampleData['Sample Type'],
+        [AB_FIELD_MAP['Target  [Conc]. (ng/ml)']]: sampleData['Target  [Conc]. (ng/ml)']
+      }
+
+      // 为每个化合物添加其对应的三个指标数据
+      fileResult.compound_list.forEach((compound, compoundIndex) => {
+        const compoundData = fileResult.data[compoundIndex][sampleIndex] // 获取当前化合物对应样品的数据
+        baseData[compound] = {
+          '峰面积（cps）': compoundData['Area (cps)'],
+          'RT': compoundData['RT (min)'],
+          '计算浓度（ng/ml）': compoundData['[Calculated Conc]. (ng/ml)']
+        }
+      })
+
+      return baseData
+    })
+
+    return fileData
+  })
+
+  return processedResults
 }
 
-// 辅助函数：格式化保留时间
-const formatRetentionTime = (time) => {
-  if (!time) return '-'
-  return Number(time).toFixed(3) + ' min'
+// 从ab数据中获取化合物列表
+function getCompoundList(data) {
+  if (!data) return []
+  // 过滤掉固定列的键，剩下的就是化合物名
+  return Object.keys(data).filter(key => 
+    key !== AB_FIELD_MAP['Sample Name'] && 
+    key !== AB_FIELD_MAP['Sample Type'] && 
+    key !== AB_FIELD_MAP['Target  [Conc]. (ng/ml)']
+  )
 }
 
-// 辅助函数：格式化峰面积
-const formatPeakArea = (area) => {
-  if (!area) return '-'
-  return Number(area).toExponential(3)
-}
+// 处理agilent-6470类型数据
+function handleAgilentData(result) {
+  if (!result || !result.single_results) return []
+  
+  // 处理每个文件的结果
+  const processedResults = result.single_results.map(fileResult => {
+    if (!fileResult.data) return []
 
-// 辅助函数：格式化离子丰度
-const formatIonAbundance = (abundance) => {
-  if (!abundance) return '-'
-  return Number(abundance).toExponential(2)
-}
+    return fileResult.data.map(row => {
+      const processedRow = {
+        '样品名称': row['数据文件'],
+        '样品类型': row['样品类型']
+      }
 
-// 辅助函数：格式化响应值
-const formatResponse = (response) => {
-  if (!response) return '-'
-  return Number(response).toExponential(2)
-}
+      // 添加其他动态字段（化合物数据）
+      Object.keys(row).forEach(key => {
+        if (key !== '数据文件' && key !== '样品类型') {
+          processedRow[key] = row[key]
+        }
+      })
 
-// 辅助函数：格式化浓度
-const formatConcentration = (concentration) => {
-  if (!concentration) return '-'
-  return Number(concentration).toFixed(4) + ' mg/L'
-}
+      // 添加单位字段
+      processedRow['单位'] = fileResult.concentration_unit || ''
 
-// 辅助函数：计算相对丰度
-const calculateRelativeAbundance = (item) => {
-  if (!item.离子丰度 || !item.基峰丰度 || item.基峰丰度 === 0) return '-'
-  const abundance = (Number(item.离子丰度) / Number(item.基峰丰度)) * 100
-  return abundance.toFixed(1) + '%'
+      return processedRow
+    })
+  })
+
+  return {
+    single_results: processedResults,
+    total_result: null
+  }
 }
 </script>
 

@@ -7,7 +7,7 @@
           ref="uploadRef"
           :auto-upload="false"
           :show-file-list="true"
-          accept=".xlsx,.xls"
+          :accept="currentAcceptedTypes"
           :multiple="true"
           :on-change="handleChange"
           :disabled="!!currentTask"
@@ -16,7 +16,7 @@
             <el-icon :size="40"><upload-filled /></el-icon>
             <div class="upload-text">
               <p>拖拽文件到此处或 <el-button type="primary" link :disabled="!!currentTask">点击上传</el-button></p>
-              <p class="upload-tip">支持 Excel 文件</p>
+              <p class="upload-tip">支持 {{ currentAcceptedTypes.split(',').join('、') }} 格式文件</p>
             </div>
           </div>
         </el-upload>
@@ -165,8 +165,7 @@ import { useRoute } from 'vue-router'
 import { useProcessStore } from '@/stores/process'
 import { 
   UploadFilled, 
-  Back,
-  Upload
+  Back
 } from '@element-plus/icons-vue'
 
 const props = defineProps({
@@ -181,6 +180,12 @@ const props = defineProps({
   handleResultData: {
     type: Function,
     default: (result) => result
+  },
+  acceptedFileTypes: {
+    type: Object,
+    default: () => ({
+      default: '.xlsx,.xls',
+    })
   }
 })
 
@@ -200,6 +205,14 @@ const pageSize = ref(20)
 // 获取当前任务
 const currentTask = computed(() => {
   return processStore.getActiveTasks.find(task => task.type === route.name)
+})
+
+// 计算当前应该接受的文件类型
+const currentAcceptedTypes = computed(() => {
+  if (selectedType.value && props.acceptedFileTypes[selectedType.value]) {
+    return props.acceptedFileTypes[selectedType.value]
+  }
+  return props.acceptedFileTypes.default
 })
 
 // 监听任务状态变化
@@ -257,7 +270,7 @@ const currentTableData = computed(() => {
   
   // 如果选择的是最终结果，返回汇总结果
   if (activeTab.value === 'final') {
-    console.log('processResult.value.total_result:', processResult.value.total_result[0])
+    // console.log('processResult.value.total_result不对哈哈哈')
     return processResult.value.total_result || []
   } else {
     // 如果是单个文件的标签页，从标签页名称中提取文件索引
@@ -266,7 +279,7 @@ const currentTableData = computed(() => {
     // 如果索引无效或该索引的结果不存在，返回空数组
     if (isNaN(index) || !processResult.value.single_results[index]) return []
     // 返回对应文件的处理结果
-    console.log('processResult.value.single_results[index]:', processResult.value.single_results[index])
+    // console.log('processResult.value.single_results[index]:', processResult.value.single_results[index])
     return processResult.value.single_results[index] || []
   }
 })
@@ -294,18 +307,27 @@ watch(activeTab, () => {
   currentPage.value = 1
 })
 
+// 添加文件类型验证函数
+const validateFileType = (file) => {
+  if (!selectedType.value) return false
+
+  const acceptedTypes = currentAcceptedTypes.value.split(',')
+  const fileName = file.name.toLowerCase()
+  
+  // 检查文件扩展名是否在接受列表中
+  return acceptedTypes.some(type => {
+    const extension = type.trim().toLowerCase()
+    return fileName.endsWith(extension)
+  })
+}
+
 // 文件改变时的处理
 const handleChange = (file) => {
   if (currentTask.value) return false
   
   // 检查文件类型
-  const isExcel = file.raw.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
-                 file.raw.type === 'application/vnd.ms-excel' ||
-                 file.name.endsWith('.xlsx') ||
-                 file.name.endsWith('.xls')
-  
-  if (!isExcel) {
-    ElMessage.error('只能上传Excel文件！')
+  if (!validateFileType(file.raw)) {
+    ElMessage.error(`只能上传${currentAcceptedTypes.value.split(',').join('、')}格式的文件！`)
     uploadRef.value.handleRemove(file)
     return false
   }
@@ -327,15 +349,11 @@ const handleDrop = (e) => {
 
   const files = Array.from(e.dataTransfer.files)
   const validFiles = files.filter(file => {
-    const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
-                    file.type === 'application/vnd.ms-excel' ||
-                    file.name.endsWith('.xlsx') ||
-                    file.name.endsWith('.xls')
-    if (!isExcel) {
-      ElMessage.error(`文件 ${file.name} 不是Excel文件`)
-      return false
+    const isValid = validateFileType(file)
+    if (!isValid) {
+      ElMessage.error(`文件 ${file.name} 格式不正确，只支持${currentAcceptedTypes.value.split(',').join('、')}格式`)
     }
-    return true
+    return isValid
   })
 
   if (validFiles.length) {

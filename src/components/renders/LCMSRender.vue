@@ -1,176 +1,220 @@
 <template>
-  <div class="table-wrapper">
-    <!-- ab类型多级表头渲染 -->
-    <template v-if="selectedType === 'ab' && processResult && processResult.single_results">
-      <el-table
-        v-if="currentData && currentData.length > 0"
-        :data="currentData.slice((pagination.currentPage - 1) * pagination.pageSize, pagination.currentPage * pagination.pageSize)"
-        border
-        stripe
-        size="small"
-        style="width: 100%"
-        class="data-table"
-        height="calc(100vh - 280px)"
-      >
-        <!-- 序号列 -->
-        <el-table-column
-          type="index"
-          label="序号"
-          width="60"
-          align="center"
-          fixed="left"
-        />
+  <div class="render-container">
+    <ResultDisplay
+      :process-result="processResult"
+      :on-back="onBack"
+      :model-value="activeTab"
+      @update:model-value="handleTabChange"
+    >
+      <template #table="{ currentData }">
+        <div class="content-wrapper">
+          <!-- ab类型多级表头渲染 -->
+          <template v-if="selectedType === 'ab' && processResult && processResult.single_results">
+            <div class="table-wrapper">
+              <el-table
+                v-if="currentData && currentData.length > 0"
+                :data="paginatedData"
+                border
+                stripe
+                size="small"
+                style="width: 100%"
+                class="data-table"
+                height="calc(100vh - 340px)"
+              >
+                <!-- 序号列 -->
+                <el-table-column
+                  type="index"
+                  label="序号"
+                  width="60"
+                  align="center"
+                  fixed="left"
+                  :index="startIndex"
+                />
 
-        <!-- 固定列 -->
-        <el-table-column
-          :prop="AB_FIELD_MAP['Sample Name']"
-          :label="AB_FIELD_MAP['Sample Name']"
-          min-width="110"
-          fixed="left"
-        />
-        <el-table-column
-          :prop="AB_FIELD_MAP['Sample Type']"
-          :label="AB_FIELD_MAP['Sample Type']"
-          min-width="80"
-          fixed="left"
-        />
-        <el-table-column
-          :prop="AB_FIELD_MAP['Target  [Conc]. (ng/ml)']"
-          :label="AB_FIELD_MAP['Target  [Conc]. (ng/ml)']"
-          min-width="130"
-          fixed="left"
-        />
+                <!-- 固定列 -->
+                <el-table-column
+                  :prop="AB_FIELD_MAP['Sample Name']"
+                  :label="AB_FIELD_MAP['Sample Name']"
+                  min-width="110"
+                  fixed="left"
+                >
+                  <template #default="scope">
+                    {{ scope.row[AB_FIELD_MAP['Sample Name']] }}
+                  </template>
+                </el-table-column>
+                <el-table-column
+                  :prop="AB_FIELD_MAP['Sample Type']"
+                  :label="AB_FIELD_MAP['Sample Type']"
+                  min-width="80"
+                  fixed="left"
+                >
+                  <template #default="scope">
+                    {{ scope.row[AB_FIELD_MAP['Sample Type']] }}
+                  </template>
+                </el-table-column>
+                <el-table-column
+                  :prop="AB_FIELD_MAP['Target  [Conc]. (ng/ml)']"
+                  :label="AB_FIELD_MAP['Target  [Conc]. (ng/ml)']"
+                  min-width="130"
+                  fixed="left"
+                >
+                  <template #default="scope">
+                    {{ scope.row[AB_FIELD_MAP['Target  [Conc]. (ng/ml)']] }}
+                  </template>
+                </el-table-column>
 
-        <!-- 化合物多级列 -->
-        <template v-if="currentData && currentData[0]">
-          <el-table-column
-            v-for="compound in getCompoundList(currentData[0])"
-            :key="compound"
-            :label="compound"
-            align="center"
-          >
-            <el-table-column
-              :prop="`${compound}.峰面积（cps）`"
-              label="峰面积（cps）"
-              min-width="100"
-              align="center"
-            >
-              <template #default="scope">
-                {{ scope.row[compound]?.['峰面积（cps）'] }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              :prop="`${compound}.RT`"
-              label="RT"
-              min-width="60"
-              align="center"
-            >
-              <template #default="scope">
-                {{ scope.row[compound]?.['RT'] }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              :prop="`${compound}.计算浓度（ng/ml）`"
-              label="计算浓度（ng/ml）"
-              min-width="130"
-              align="center"
-            >
-              <template #default="scope">
-                {{ scope.row[compound]?.['计算浓度（ng/ml）'] }}
-              </template>
-            </el-table-column>
-          </el-table-column>
-        </template>
-      </el-table>
-    </template>
+                <!-- 化合物多级列 -->
+                <template v-if="currentData && currentData[0]">
+                  <el-table-column
+                    v-for="compound in getCompoundList(currentData[0])"
+                    :key="compound"
+                    :label="compound"
+                    align="center"
+                  >
+                    <el-table-column
+                      :prop="`${compound}.峰面积（cps）`"
+                      label="峰面积（cps）"
+                      min-width="100"
+                      align="center"
+                    >
+                      <template #default="scope">
+                        {{ scope.row[compound]?.['峰面积（cps）'] }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column
+                      :prop="`${compound}.RT`"
+                      label="RT"
+                      min-width="60"
+                      align="center"
+                    >
+                      <template #default="scope">
+                        {{ scope.row[compound]?.['RT'] }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column
+                      :prop="`${compound}.计算浓度（ng/ml）`"
+                      label="计算浓度（ng/ml）"
+                      min-width="130"
+                      align="center"
+                    >
+                      <template #default="scope">
+                        {{ scope.row[compound]?.['计算浓度（ng/ml）'] }}
+                      </template>
+                    </el-table-column>
+                  </el-table-column>
+                </template>
+              </el-table>
+            </div>
+          </template>
 
-    <!-- agilent-6470类型动态表头渲染 -->
-    <template v-else-if="selectedType === 'agilent-6470' && processResult && processResult.single_results">
-      <el-table
-        v-if="currentData && currentData.length > 0"
-        :data="currentData"
-        border
-        stripe
-        size="small"
-        style="width: 100%"
-        class="data-table"
-        height="calc(100vh - 280px)"
-      >
-        <!-- 序号列 -->
-        <el-table-column
-          type="index"
-          label="序号"
-          width="60"
-          align="center"
-          fixed="left"
-        />
+          <!-- agilent-6470类型动态表头渲染 -->
+          <template v-else-if="selectedType === 'agilent-6470' && processResult && processResult.single_results">
+            <div class="table-wrapper">
+              <el-table
+                v-if="currentData && currentData.length > 0"
+                :data="paginatedData"
+                border
+                stripe
+                size="small"
+                style="width: 100%"
+                class="data-table"
+                height="calc(100vh - 340px)"
+              >
+                <!-- 序号列 -->
+                <el-table-column
+                  type="index"
+                  label="序号"
+                  width="60"
+                  align="center"
+                  fixed="left"
+                  :index="startIndex"
+                />
 
-        <!-- 固定列 -->
-        <el-table-column
-          prop="样品名称"
-          label="样品名称"
-          min-width="120"
-          fixed="left"
-        />
-        <el-table-column
-          prop="样品类型"
-          label="样品类型"
-          min-width="100"
-          fixed="left"
-        />
+                <!-- 固定列 -->
+                <el-table-column
+                  prop="样品名称"
+                  label="样品名称"
+                  min-width="120"
+                  fixed="left"
+                >
+                  <template #default="scope">
+                    {{ scope.row['样品名称'] }}
+                  </template>
+                </el-table-column>
+                <el-table-column
+                  prop="样品类型"
+                  label="样品类型"
+                  min-width="100"
+                  fixed="left"
+                >
+                  <template #default="scope">
+                    {{ scope.row['样品类型'] }}
+                  </template>
+                </el-table-column>
 
-        <!-- 动态化合物列 -->
-        <template v-if="currentData[0]">
-          <el-table-column
-            v-for="compound in Object.keys(currentData[0]).filter(key => key !== '样品名称' && key !== '样品类型' && key !== '单位')"
-            :key="compound"
-            :prop="compound"
-            :label="compound"
-            min-width="100"
-            align="center"
+                <!-- 动态化合物列 -->
+                <template v-if="currentData[0]">
+                  <el-table-column
+                    v-for="compound in Object.keys(currentData[0]).filter(key => key !== '样品名称' && key !== '样品类型' && key !== '单位')"
+                    :key="compound"
+                    :prop="compound"
+                    :label="compound"
+                    min-width="100"
+                    align="center"
+                  >
+                    <template #default="scope">
+                      {{ scope.row[compound] }}
+                    </template>
+                  </el-table-column>
+                </template>
+
+                <!-- 单位列 -->
+                <el-table-column
+                  prop="单位"
+                  label="单位"
+                  min-width="80"
+                  align="center"
+                >
+                  <template #default="scope">
+                    {{ scope.row['单位'] }}
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </template>
+
+          <!-- 无数据时显示 -->
+          <div v-if="!currentData || currentData.length === 0" class="no-data">
+            <el-empty description="暂无数据" />
+          </div>
+        </div>
+
+        <!-- 统一的分页器 -->
+        <div class="pagination-wrapper">
+          <el-pagination
+            v-if="currentData && currentData.length > 0"
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="currentData.length"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            background
           />
-        </template>
-
-        <!-- 单位列 -->
-        <el-table-column
-          prop="单位"
-          label="单位"
-          min-width="80"
-          align="center"
-        />
-      </el-table>
-    </template>
-
-    <!-- 无数据时显示 -->
-    <div v-if="!currentData || currentData.length === 0" class="no-data">
-      <el-empty description="暂无数据" />
-    </div>
-
-    <!-- 分页器 -->
-    <div class="pagination-container" v-if="currentData && currentData.length > 0">
-      <el-pagination
-        v-model:current-page="pagination.currentPage"
-        v-model:page-size="pagination.pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="currentData.length"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="pagination.handleSizeChange"
-        @current-change="pagination.handleCurrentChange"
-        background
-      />
-    </div>
+        </div>
+      </template>
+    </ResultDisplay>
   </div>
 </template>
 
 <script setup>
-// 定义props
+import { ref, computed } from 'vue'
+import ResultDisplay from '@/components/ResultDisplay.vue'
+
 const props = defineProps({
   currentData: {
     type: Array,
-    required: true
-  },
-  pagination: {
-    type: Object,
     required: true
   },
   activeTab: {
@@ -184,8 +228,41 @@ const props = defineProps({
   processResult: {
     type: Object,
     required: true
+  },
+  onBack: {
+    type: Function,
+    required: true
   }
 })
+
+const emit = defineEmits(['update:activeTab'])
+
+// 分页状态
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+// 计算序号起始值
+const startIndex = (index) => {
+  return (currentPage.value - 1) * pageSize.value + index + 1
+}
+
+// 分页数据
+const paginatedData = computed(() => {
+  if (!props.currentData) return []
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return props.currentData.slice(start, end)
+})
+
+// 处理分页事件
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+}
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+}
 
 // ab字段映射
 const AB_FIELD_MAP = {
@@ -207,15 +284,40 @@ function getCompoundList(data) {
     key !== AB_FIELD_MAP['Target  [Conc]. (ng/ml)']
   )
 }
+
+// 处理标签页变化
+const handleTabChange = (value) => {
+  emit('update:activeTab', value)
+  // 切换标签页时重置分页
+  currentPage.value = 1
+}
 </script>
 
 <style scoped>
-.table-wrapper {
-  padding: 16px;
+.render-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.pagination-container {
-  margin-top: 16px;
+.content-wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+.table-wrapper {
+  height: 100%;
+  min-height: 0;
+}
+
+.data-table {
+  width: 100%;
+}
+
+.pagination-wrapper {
+  padding: 16px;
+  background-color: var(--el-bg-color);
+  border-top: 1px solid var(--el-border-color-light);
   display: flex;
   justify-content: flex-end;
 }

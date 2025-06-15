@@ -1,6 +1,7 @@
 <template>
   <div class="process-container">
     <FileUpload
+      v-if="!showResult"
       :type-options="typeOptions"
       :process-function="handleProcess"
       :handle-result-data="handleResultData"
@@ -9,21 +10,22 @@
         'agilent-6470': '.xlsx,.xls',
         'default': '.xlsx,.xls'
       }"
-    >
-      <template #result-table="{ currentData, pagination, activeTab, processResult, selectedType }">
-        <LCMSRender
-          :current-data="currentData"
-          :pagination="pagination"
-          :active-tab="activeTab"
-          :process-result="processResult"
-          :selected-type="selectedType"
-        />
-      </template>
-    </FileUpload>
+      @process-complete="handleProcessComplete"
+    />
+    
+    <LCMSRender
+      v-else
+      :current-data="currentData"
+      v-model:active-tab="activeTab"
+      :process-result="processResult"
+      :selected-type="selectedType"
+      :on-back="handleBack"
+    />
   </div>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
 import FileUpload from '@/components/FileUpload.vue'
 import LCMSRender from '@/components/renders/LCMSRender.vue'
 import { processABLCMS, processAgilentLCMS } from '@/api/DocProcess'
@@ -40,6 +42,28 @@ const typeOptions = [
   }
 ]
 
+// 组件状态
+const showResult = ref(false)
+const processResult = ref(null)
+const selectedType = ref('')
+const activeTab = ref('file0')
+
+// 计算当前显示的表格数据
+const currentData = computed(() => {
+  // 如果没有处理结果，返回空数组
+  if (!processResult.value) return []
+  
+  // 如果选择的是最终结果，返回汇总结果
+  if (activeTab.value === 'final') {
+    return processResult.value.total_result || []
+  } else {
+    // 获取单个文件的结果
+    const index = parseInt(activeTab.value.replace('file', ''))
+    if (isNaN(index) || !processResult.value.single_results[index]) return []
+    return processResult.value.single_results[index] || []
+  }
+})
+
 // 调用接口，发送处理请求
 const handleProcess = async (files, selectedType, taskId) => {
   if (selectedType === 'ab') {
@@ -52,23 +76,44 @@ const handleProcess = async (files, selectedType, taskId) => {
 }
 
 // 自定义统一处理接口响应数据函数
-const handleResultData = (result, selectedType) => {
+const handleResultData = (result, type) => {
   try {
-    if (selectedType === 'ab') {
-      const processedData = handleAbLCMSData(result)
+    let processedData
+    if (type === 'ab') {
+      processedData = handleAbLCMSData(result)
       return {
-        single_results: processedData,  // 直接返回处理后的数据数组，每个元素代表一个文件的数据
-        total_result: null              // ab类型没有total_result
+        single_results: processedData,
+        total_result: null,
+        type: type
       }
-    } else if (selectedType === 'agilent-6470') {
-      return handleAgilentLCMSData(result)
+    } else if (type === 'agilent-6470') {
+      processedData = handleAgilentLCMSData(result)
+      return {
+        ...processedData,
+        type: type
+      }
     } else {
-      return { single_results: [], total_result: null }
+      return { single_results: [], total_result: null, type: type }
     }
   } catch (error) {
     console.error('数据处理错误:', error)
-    return { single_results: [], total_result: null }
+    return { single_results: [], total_result: null, type: type }
   }
+}
+
+// 处理完成回调
+const handleProcessComplete = (result) => {
+  processResult.value = result
+  selectedType.value = result.type || 'ab'
+  showResult.value = true
+}
+
+// 返回处理
+const handleBack = () => {
+  showResult.value = false
+  processResult.value = null
+  selectedType.value = ''
+  activeTab.value = 'file0'
 }
 </script>
 

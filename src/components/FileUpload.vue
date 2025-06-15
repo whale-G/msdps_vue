@@ -1,7 +1,7 @@
 <template>
   <div class="upload-container">
     <!-- 上传区域 -->
-    <el-card class="upload-card" v-if="!hasFiles">
+    <el-card class="upload-card">
       <div class="upload-area" @drop.prevent="handleDrop" @dragover.prevent>
         <el-upload
           ref="uploadRef"
@@ -61,100 +61,6 @@
         </div>
       </div>
     </el-card>
-
-    <!-- 结果展示区域 -->
-    <el-card v-else class="result-card">
-      <template #header>
-        <div class="result-header">
-          <el-button 
-            type="primary" 
-            @click="resetUpload" 
-            size="small" 
-            class="back-button"
-          >
-            <el-icon><back /></el-icon>
-            返回处理
-          </el-button>
-          
-          <div class="tabs-wrapper">
-            <el-scrollbar>
-              <el-tabs v-model="activeTab" class="result-tabs" type="card">
-                <el-tab-pane 
-                  v-for="(result, index) in processResult.single_results" 
-                  :key="index"
-                  :label="'文件' + (index + 1)"
-                  :name="'file' + index"
-                >
-                </el-tab-pane>
-                <el-tab-pane 
-                  v-if="processResult.total_result"
-                  label="最终结果" 
-                  name="final"
-                >
-                </el-tab-pane>
-              </el-tabs>
-            </el-scrollbar>
-          </div>
-        </div>
-      </template>
-
-      <div class="result-content">
-        <slot 
-          name="result-table" 
-          :current-data="currentTableData"
-          :active-tab="activeTab"
-          :process-result="processResult"
-          :selected-type="selectedType"
-          :pagination="{
-            currentPage,
-            pageSize,
-            handleSizeChange,
-            handleCurrentChange
-          }"
-        >
-          <!-- 默认表格渲染，当没有提供自定义插槽时使用 -->
-          <div class="table-wrapper">
-            <el-table
-              v-if="currentTableData && currentTableData.length > 0"
-              :data="paginatedData"
-              border
-              stripe
-              size="small"
-              style="width: 100%"
-              class="data-table"
-              height="calc(100vh - 280px)"
-            >
-              <el-table-column
-                v-for="(value, key) in currentTableData[0]"
-                :key="key"
-                :prop="key"
-                :label="key"
-                :min-width="getColumnWidth(key)"
-                show-overflow-tooltip
-                align="center"
-              />
-            </el-table>
-            
-            <div class="pagination-container" v-if="currentTableData && currentTableData.length > 0">
-              <el-pagination
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :page-sizes="[10, 20, 50, 100]"
-                :total="currentTableData.length"
-                layout="total, sizes, prev, pager, next, jumper"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-                background
-              />
-            </div>
-          </div>
-
-          <div v-if="!currentTableData || currentTableData.length === 0" class="no-data">
-            <el-empty description="暂无数据" />
-          </div>
-        </slot>
-      </div>
-    </el-card>
   </div>
 </template>
 
@@ -163,10 +69,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { useProcessStore } from '@/stores/process'
-import { 
-  UploadFilled, 
-  Back
-} from '@element-plus/icons-vue'
+import { UploadFilled } from '@element-plus/icons-vue'
 
 const props = defineProps({
   typeOptions: {
@@ -189,6 +92,8 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['process-complete'])
+
 const route = useRoute()
 const processStore = useProcessStore()
 
@@ -196,11 +101,6 @@ const processStore = useProcessStore()
 const uploadRef = ref(null)
 const selectedType = ref('')
 const fileList = ref([])
-const hasFiles = ref(false)
-const processResult = ref(null)
-const activeTab = ref('file0')
-const currentPage = ref(1)
-const pageSize = ref(20)
 
 // 获取当前任务
 const currentTask = computed(() => {
@@ -220,8 +120,8 @@ watch(currentTask, (newTask, oldTask) => {
   if (newTask?.status === 'completed' && newTask?.result) {
     // 只有当当前页面与任务类型匹配时才更新显示
     if (route.name === newTask.type) {
-      processResult.value = newTask.result
-      hasFiles.value = true
+      const processedResult = props.handleResultData(newTask.result, selectedType.value)
+      emit('process-complete', processedResult)
     }
     // 保存到对应任务类型的store中
     processStore.setPageData(newTask.type, newTask.result)
@@ -229,83 +129,9 @@ watch(currentTask, (newTask, oldTask) => {
   } else if (newTask?.status === 'error') {
     if (route.name === newTask.type) {
       ElMessage.error(newTask.error || '处理失败')
-      hasFiles.value = false
-      processResult.value = null
     }
   }
 }, { deep: true })
-
-// 监听路由变化，恢复数据
-watch(() => route.name, (newRoute) => {
-  if (newRoute) {
-    const savedResult = processStore.getCurrentPageData(newRoute)
-    const savedType = processStore.getCurrentPageSelectedType(newRoute)
-    if (savedResult) {
-      processResult.value = savedResult
-      hasFiles.value = true
-      selectedType.value = savedType
-    } else {
-      processResult.value = null
-      hasFiles.value = false
-      selectedType.value = ''
-    }
-  }
-}, { immediate: true })
-
-// 组件挂载时恢复数据
-onMounted(() => {
-  const savedResult = processStore.getCurrentPageData(route.name)
-  const savedType = processStore.getCurrentPageSelectedType(route.name)
-  if (savedResult) {
-    processResult.value = savedResult
-    hasFiles.value = true
-    selectedType.value = savedType
-  }
-})
-
-// 计算当前显示的表格数据
-const currentTableData = computed(() => {
-  // 如果没有处理结果，返回空数组
-  if (!processResult.value) return []
-  
-  // 如果选择的是最终结果，返回汇总结果
-  if (activeTab.value === 'final') {
-    console.log('processResult.value.total_result', processResult.value.total_result)
-    return processResult.value.total_result || []
-  } else {
-    // 如果是单个文件的标签页，从标签页名称中提取文件索引
-    // 例如：'file0' -> 0, 'file1' -> 1
-    const index = parseInt(activeTab.value.replace('file', ''))
-    // 如果索引无效或该索引的结果不存在，返回空数组
-    if (isNaN(index) || !processResult.value.single_results[index]) return []
-    // 返回对应文件的处理结果
-    console.log('processResult.value.single_results[index]:', processResult.value.single_results[index])
-    return processResult.value.single_results[index] || []
-  }
-})
-
-// 分页数据
-const paginatedData = computed(() => {
-  if (!currentTableData.value || !Array.isArray(currentTableData.value)) return []
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return currentTableData.value.slice(start, end)
-})
-
-// 处理分页事件
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  currentPage.value = 1
-}
-
-const handleCurrentChange = (val) => {
-  currentPage.value = val
-}
-
-// 切换标签页时重置分页
-watch(activeTab, () => {
-  currentPage.value = 1
-})
 
 // 添加文件类型验证函数
 const validateFileType = (file) => {
@@ -370,32 +196,6 @@ const clearFiles = () => {
   }
 }
 
-// 重置上传
-const resetUpload = () => {
-  if (currentTask.value) return
-  hasFiles.value = false
-  fileList.value = []
-  processResult.value = null
-  activeTab.value = 'file0'
-  selectedType.value = ''
-  currentPage.value = 1
-  if (uploadRef.value) {
-    uploadRef.value.clearFiles()
-  }
-  processStore.clearPageState(route.name)
-}
-
-// 获取列宽度
-const getColumnWidth = (key) => {
-  const widthMap = {
-    '样品编号': 120,
-    '检测项目': 150,
-    '结果': 100,
-    '单位': 80,
-  }
-  return widthMap[key] || 120
-}
-
 // 取消当前任务
 const cancelTask = () => {
   if (currentTask.value) {
@@ -427,14 +227,14 @@ const submitUpload = async () => {
     // 调用处理函数
     const result = await props.processFunction(files, selectedType.value, taskId)
     
-    // 使用自定义的数据处理函数处理返回结果
-    const processedResult = props.handleResultData(result, selectedType.value)
-    
     // 设置任务结果并更新页面状态
-    processStore.setTaskResult(taskId, processedResult)
-    processStore.setPageData(route.name, processedResult, selectedType.value)
-    processResult.value = processedResult
-    hasFiles.value = true
+    processStore.setTaskResult(taskId, result)
+    processStore.setPageData(route.name, result, selectedType.value)
+    
+    // 发送处理完成事件
+    const processedResult = props.handleResultData(result, selectedType.value)
+    emit('process-complete', processedResult)
+    
     ElMessage.success('处理完成')
   } catch (error) {
     console.error('处理失败:', error)
@@ -462,8 +262,7 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-.upload-card,
-.result-card {
+.upload-card {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -537,135 +336,10 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.result-header {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--el-border-color-light);
-  background-color: var(--el-bg-color);
-  
-  .back-button {
-    margin-right: 16px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .tabs-wrapper {
-    flex: 1;
-    overflow: hidden;
-    
-    :deep(.el-tabs) {
-      height: 100%;
-      
-      .el-tabs__header {
-        margin: 0;
-      }
-      
-      .el-tabs__nav-wrap {
-        padding: 0 8px;
-      }
-    }
-  }
-}
-
-.result-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 16px;
-  
-  .table-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0; /* 关键：防止表格溢出 */
-    
-    :deep(.el-table) {
-      flex: 1;
-      
-      .el-table__body-wrapper {
-        overflow-y: auto;
-      }
-    }
-    
-    .pagination-container {
-      margin-top: 16px;
-      padding: 8px 0;
-      display: flex;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      gap: 8px;
-      
-      :deep(.el-pagination) {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: flex-end;
-        
-        @media screen and (max-width: 768px) {
-          width: 100%;
-          justify-content: center;
-          
-          .el-pagination__sizes {
-            margin: 0 4px;
-          }
-
-          .el-pagination__jump {
-            margin-left: 4px;
-          }
-          
-          .btn-prev,
-          .btn-next {
-            margin: 0;
-          }
-          
-          .el-pager {
-            margin: 0 4px;
-          }
-        }
-      }
-    }
-  }
-}
-
-.no-data {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 32px;
-}
-
 .upload-actions {
   margin-top: 20px;
   display: flex;
   gap: 16px;
   justify-content: center;
-}
-
-/* 深色模式适配 */
-:deep(.dark) {
-  .el-tabs__item {
-    &:hover {
-      background-color: var(--el-color-primary-light-5);
-    }
-
-    &.is-active {
-      background-color: var(--el-color-primary-light-5);
-      color: var(--el-color-white);
-    }
-  }
-
-  .el-table {
-    --el-table-border-color: var(--el-border-color-darker);
-    --el-table-header-bg-color: var(--el-color-primary-light-5);
-    --el-table-row-hover-bg-color: var(--el-color-primary-light-3);
-  }
-
-  .result-header {
-    border-bottom-color: var(--el-border-color-darker);
-  }
 }
 </style> 

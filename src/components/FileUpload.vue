@@ -270,7 +270,7 @@ const currentTableData = computed(() => {
   
   // 如果选择的是最终结果，返回汇总结果
   if (activeTab.value === 'final') {
-    // console.log('processResult.value.total_result不对哈哈哈')
+    console.log('processResult.value.total_result', processResult.value.total_result)
     return processResult.value.total_result || []
   } else {
     // 如果是单个文件的标签页，从标签页名称中提取文件索引
@@ -279,7 +279,7 @@ const currentTableData = computed(() => {
     // 如果索引无效或该索引的结果不存在，返回空数组
     if (isNaN(index) || !processResult.value.single_results[index]) return []
     // 返回对应文件的处理结果
-    // console.log('processResult.value.single_results[index]:', processResult.value.single_results[index])
+    console.log('processResult.value.single_results[index]:', processResult.value.single_results[index])
     return processResult.value.single_results[index] || []
   }
 })

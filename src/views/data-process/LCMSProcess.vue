@@ -11,167 +11,13 @@
       }"
     >
       <template #result-table="{ currentData, pagination, activeTab, processResult, selectedType }">
-        <div class="table-wrapper">
-          <!-- ab类型多级表头渲染 -->
-          <template v-if="selectedType === 'ab' && processResult && processResult.single_results">
-            <el-table
-              v-if="currentData && currentData.length > 0"
-              :data="currentData.slice((pagination.currentPage - 1) * pagination.pageSize, pagination.currentPage * pagination.pageSize)"
-              border
-              stripe
-              size="small"
-              style="width: 100%"
-              class="data-table"
-              height="calc(100vh - 280px)"
-            >
-              <!-- 序号列 -->
-              <el-table-column
-                type="index"
-                label="序号"
-                width="60"
-                align="center"
-                fixed="left"
-              />
-
-              <!-- 固定列 -->
-              <el-table-column
-                :prop="AB_FIELD_MAP['Sample Name']"
-                :label="AB_FIELD_MAP['Sample Name']"
-                min-width="100"
-                fixed="left"
-              />
-              <el-table-column
-                :prop="AB_FIELD_MAP['Sample Type']"
-                :label="AB_FIELD_MAP['Sample Type']"
-                min-width="100"
-                fixed="left"
-              />
-              <el-table-column
-                :prop="AB_FIELD_MAP['Target  [Conc]. (ng/ml)']"
-                :label="AB_FIELD_MAP['Target  [Conc]. (ng/ml)']"
-                min-width="80"
-                fixed="left"
-              />
-
-              <!-- 化合物多级列 -->
-              <template v-if="currentData && currentData[0]">
-                <el-table-column
-                  v-for="compound in getCompoundList(currentData[0])"
-                  :key="compound"
-                  :label="compound"
-                  align="center"
-                >
-                  <el-table-column
-                    :prop="`${compound}.峰面积（cps）`"
-                    label="峰面积（cps）"
-                    min-width="100"
-                    align="center"
-                  >
-                    <template #default="scope">
-                      {{ scope.row[compound]?.['峰面积（cps）'] }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column
-                    :prop="`${compound}.RT`"
-                    label="RT"
-                    min-width="80"
-                    align="center"
-                  >
-                    <template #default="scope">
-                      {{ scope.row[compound]?.['RT'] }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column
-                    :prop="`${compound}.计算浓度（ng/ml）`"
-                    label="计算浓度（ng/ml）"
-                    min-width="80"
-                    align="center"
-                  >
-                    <template #default="scope">
-                      {{ scope.row[compound]?.['计算浓度（ng/ml）'] }}
-                    </template>
-                  </el-table-column>
-                </el-table-column>
-              </template>
-            </el-table>
-          </template>
-
-          <!-- agilent-6470类型动态表头渲染 -->
-          <template v-else-if="selectedType === 'agilent-6470' && processResult && processResult.single_results">
-            <el-table
-              v-if="currentData && currentData.length > 0"
-              :data="currentData"
-              border
-              stripe
-              size="small"
-              style="width: 100%"
-              class="data-table"
-              height="calc(100vh - 280px)"
-            >
-              <!-- 序号列 -->
-              <el-table-column
-                type="index"
-                label="序号"
-                width="60"
-                align="center"
-                fixed="left"
-              />
-
-              <!-- 固定列 -->
-              <el-table-column
-                prop="样品名称"
-                label="样品名称"
-                min-width="120"
-                fixed="left"
-              />
-              <el-table-column
-                prop="样品类型"
-                label="样品类型"
-                min-width="100"
-                fixed="left"
-              />
-
-              <!-- 动态化合物列 -->
-              <template v-if="currentData[0]">
-                <el-table-column
-                  v-for="compound in Object.keys(currentData[0]).filter(key => key !== '样品名称' && key !== '样品类型' && key !== '单位')"
-                  :key="compound"
-                  :prop="compound"
-                  :label="compound"
-                  min-width="100"
-                  align="center"
-                />
-              </template>
-
-              <!-- 单位列 -->
-              <el-table-column
-                prop="单位"
-                label="单位"
-                min-width="80"
-                align="center"
-              />
-            </el-table>
-          </template>
-
-          <!-- 无数据时显示 -->
-          <div v-if="!currentData || currentData.length === 0" class="no-data">
-            <el-empty description="暂无数据" />
-          </div>
-
-          <!-- 分页器 -->
-          <div class="pagination-container" v-if="currentData && currentData.length > 0">
-            <el-pagination
-              v-model:current-page="pagination.currentPage"
-              v-model:page-size="pagination.pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :total="currentData.length"
-              layout="total, sizes, prev, pager, next, jumper"
-              @size-change="pagination.handleSizeChange"
-              @current-change="pagination.handleCurrentChange"
-              background
-            />
-          </div>
-        </div>
+        <LCMSRender
+          :current-data="currentData"
+          :pagination="pagination"
+          :active-tab="activeTab"
+          :process-result="processResult"
+          :selected-type="selectedType"
+        />
       </template>
     </FileUpload>
   </div>
@@ -179,6 +25,7 @@
 
 <script setup>
 import FileUpload from '@/components/FileUpload.vue'
+import LCMSRender from '@/components/renders/LCMSRender.vue'
 import { processABLCMS, processAgilentLCMS } from '@/api/DocProcess'
 
 const typeOptions = [
@@ -272,17 +119,6 @@ function handleAbData(result) {
   return processedResults
 }
 
-// 从ab数据中获取化合物列表
-function getCompoundList(data) {
-  if (!data) return []
-  // 过滤掉固定列的键，剩下的就是化合物名
-  return Object.keys(data).filter(key => 
-    key !== AB_FIELD_MAP['Sample Name'] && 
-    key !== AB_FIELD_MAP['Sample Type'] && 
-    key !== AB_FIELD_MAP['Target  [Conc]. (ng/ml)']
-  )
-}
-
 // 处理agilent-6470类型数据
 function handleAgilentData(result) {
   if (!result || !result.single_results) return []
@@ -323,36 +159,5 @@ function handleAgilentData(result) {
   height: 100%;
   width: 100%;
   background-color: var(--el-bg-color-page);
-}
-
-.table-wrapper {
-  padding: 16px;
-}
-
-.pagination-container {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.no-data {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-}
-
-:deep(.el-table) {
-  --el-table-header-bg-color: var(--el-color-primary-light-8);
-  --el-table-header-text-color: var(--el-text-color-primary);
-}
-
-:deep(.el-table th) {
-  font-weight: bold;
-}
-
-:deep(.el-tag) {
-  width: 58px;
-  text-align: center;
 }
 </style> 

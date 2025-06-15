@@ -8,218 +8,12 @@
     >
       <!-- 自定义表格渲染 -->
       <template #result-table="{ currentData, pagination, activeTab, selectedType }">
-        <div class="table-wrapper">
-          <!-- 岛津液相数据渲染 -->
-          <template v-if="selectedType === 'shimazu-lc30&lc2030'">
-            <template v-if="activeTab === 'final'">
-              <!-- 最终结果渲染 -->
-              <template v-for="(wavelengthData, wavelengthIndex) in currentData" :key="wavelengthIndex">
-                <!-- 波长标题 -->
-                <div class="wavelength-title">
-                  波长{{ wavelengthIndex + 1 }}
-                </div>
-                
-                <el-table
-                  :data="Array.isArray(wavelengthData) ? wavelengthData.slice(
-                    (pagination.currentPage - 1) * pagination.pageSize,
-                    pagination.currentPage * pagination.pageSize
-                  ) : []"
-                  border
-                  stripe
-                  size="small"
-                  style="width: 100%; margin-bottom: 20px;"
-                  class="data-table"
-                  height="calc((100vh - 280px) / 2)"
-                  :row-class-name="tableRowClassName"
-                >
-                  <!-- 添加行号列 -->
-                  <el-table-column
-                    type="index"
-                    label="序号"
-                    width="60"
-                    align="center"
-                    :index="(index) => calculateIndex(index, pagination)"
-                    fixed="left"
-                  />
-                  
-                  <!-- 汇总结果表格结构 -->
-                  <template v-for="column in getTableColumns(selectedType).final" :key="column.prop">
-                    <el-table-column
-                      :prop="column.prop"
-                      :label="column.label"
-                      :min-width="column.minWidth"
-                      :align="column.align"
-                      :fixed="column.fixed"
-                    />
-                  </template>
-                  <!-- 动态生成文件列 -->
-                  <template v-for="file in getFileList(wavelengthData, selectedType)" :key="file">
-                    <el-table-column :label="file" align="center" min-width="120">
-                      <template #default="scope">
-                        <span>{{ formatArea(scope.row[file]) }}</span>
-                      </template>
-                    </el-table-column>
-                  </template>
-                </el-table>
-
-                <!-- 每个波长组的分页器 -->
-                <div class="pagination-container" v-if="Array.isArray(wavelengthData) && wavelengthData.length > 0">
-                  <el-pagination
-                    v-model:current-page="pagination.currentPage"
-                    v-model:page-size="pagination.pageSize"
-                    :page-sizes="[10, 20, 50, 100]"
-                    :total="wavelengthData.length"
-                    layout="total, sizes, prev, pager, next, jumper"
-                    @size-change="pagination.handleSizeChange"
-                    @current-change="pagination.handleCurrentChange"
-                    background
-                  />
-                </div>
-              </template>
-            </template>
-            
-            <template v-else>
-              <!-- 单个文件渲染 -->
-              <template v-for="(wavelengthData, wavelengthIndex) in (currentData?.data || [])" :key="wavelengthIndex">
-                <!-- 波长标题 -->
-                <div class="wavelength-title">
-                  波长{{ wavelengthIndex + 1 }}
-                </div>
-                
-                <el-table
-                  :data="Array.isArray(wavelengthData) ? wavelengthData.slice(
-                    (getWavelengthPagination(wavelengthIndex).currentPage - 1) * getWavelengthPagination(wavelengthIndex).pageSize,
-                    getWavelengthPagination(wavelengthIndex).currentPage * getWavelengthPagination(wavelengthIndex).pageSize
-                  ) : []"
-                  border
-                  stripe
-                  size="small"
-                  style="width: 100%; margin-bottom: 20px;"
-                  class="data-table"
-                  height="calc((100vh - 280px) / 2)"
-                  :row-class-name="tableRowClassName"
-                >
-                  <!-- 添加行号列 -->
-                  <el-table-column
-                    type="index"
-                    label="序号"
-                    width="60"
-                    align="center"
-                    :index="(index) => calculateIndex(index, getWavelengthPagination(wavelengthIndex))"
-                    fixed="left"
-                  />
-                  
-                  <!-- 单个文件的表格结构 -->
-                  <template v-for="column in getTableColumns(selectedType).single" :key="column.prop">
-                    <el-table-column
-                      :prop="column.prop"
-                      :label="column.label"
-                      :min-width="column.minWidth"
-                      :align="column.align"
-                      :fixed="column.fixed"
-                    />
-                  </template>
-                </el-table>
-                
-                <!-- 每个波长组独立的分页器 -->
-                <div class="pagination-container" v-if="Array.isArray(wavelengthData) && wavelengthData.length > 0">
-                  <el-pagination
-                    v-model:current-page="getWavelengthPagination(wavelengthIndex).currentPage"
-                    v-model:page-size="getWavelengthPagination(wavelengthIndex).pageSize"
-                    :page-sizes="[10, 20, 50, 100]"
-                    :total="wavelengthData.length"
-                    layout="total, sizes, prev, pager, next, jumper"
-                    @size-change="getWavelengthPagination(wavelengthIndex).handleSizeChange"
-                    @current-change="getWavelengthPagination(wavelengthIndex).handleCurrentChange"
-                    background
-                  />
-                </div>
-              </template>
-            </template>
-          </template>
-
-          <!-- 安捷伦液相数据渲染 -->
-          <template v-else>
-            <el-table
-              v-if="Array.isArray(currentData) && currentData.length > 0"
-              :data="currentData.slice(
-                (pagination.currentPage - 1) * pagination.pageSize,
-                pagination.currentPage * pagination.pageSize
-              )"
-              border
-              stripe
-              size="small"
-              style="width: 100%"
-              class="data-table"
-              height="calc(100vh - 280px)"
-              :row-class-name="tableRowClassName"
-            >
-              <!-- 添加行号列 -->
-              <el-table-column
-                type="index"
-                label="序号"
-                width="60"
-                align="center"
-                :index="(index) => calculateIndex(index, pagination)"
-                fixed="left"
-              />
-              
-              <!-- 根据activeTab显示不同的表格结构 -->
-              <template v-if="activeTab === 'final'">
-                <!-- 汇总结果表格结构 -->
-                <template v-for="column in getTableColumns(selectedType).final" :key="column.prop">
-                  <el-table-column
-                    :prop="column.prop"
-                    :label="column.label"
-                    :min-width="column.minWidth"
-                    :align="column.align"
-                    :fixed="column.fixed"
-                  />
-                </template>
-                <!-- 动态生成文件列 -->
-                <template v-for="file in getFileList(currentData, selectedType)" :key="file">
-                  <el-table-column :label="file" align="center" min-width="120">
-                    <template #default="scope">
-                      <span>{{ formatArea(scope.row[file]) }}</span>
-                    </template>
-                  </el-table-column>
-                </template>
-              </template>
-
-              <template v-else>
-                <!-- 单个文件的表格结构 -->
-                <template v-for="column in getTableColumns(selectedType).single" :key="column.prop">
-                  <el-table-column
-                    :prop="column.prop"
-                    :label="column.label"
-                    :min-width="column.minWidth"
-                    :align="column.align"
-                    :fixed="column.fixed"
-                  />
-                </template>
-              </template>
-            </el-table>
-
-            <!-- 安捷伦液相的分页器 -->
-            <div class="pagination-container" v-if="Array.isArray(currentData) && currentData.length > 0">
-              <el-pagination
-                v-model:current-page="pagination.currentPage"
-                v-model:page-size="pagination.pageSize"
-                :page-sizes="[10, 20, 50, 100]"
-                :total="currentData.length"
-                layout="total, sizes, prev, pager, next, jumper"
-                @size-change="pagination.handleSizeChange"
-                @current-change="pagination.handleCurrentChange"
-                background
-              />
-            </div>
-          </template>
-
-          <!-- 无数据时显示 -->
-          <div v-if="!currentData || (selectedType === 'shimazu-lc30&lc2030' && !currentData.data && !Array.isArray(currentData)) || (!Array.isArray(currentData) && selectedType !== 'shimazu-lc30&lc2030')" class="no-data">
-            <el-empty description="暂无数据" />
-          </div>
-        </div>
+        <LCRender
+          :current-data="currentData"
+          :pagination="pagination"
+          :active-tab="activeTab"
+          :selected-type="selectedType"
+        />
       </template>
     </FileUpload>
   </div>
@@ -227,6 +21,7 @@
 
 <script setup>
 import FileUpload from '@/components/FileUpload.vue'
+import LCRender from '@/components/renders/LCRender.vue'
 import { processShimazuLC, processAgilentLC } from '@/api/DocProcess'
 import { useUserStore } from '@/stores/user'
 import { useProcessStore } from '@/stores/process'
@@ -323,60 +118,6 @@ const handleResultData = (result, selectedType = 'shimazu-lc30&lc2030') => {
     console.error('数据处理错误:', error)
     return result
   }
-}
-
-// 获取波长分组数据
-const getWavelengthGroups = (data, activeTab) => {
-  if (!data || data.length === 0) return []
-  
-  if (activeTab === 'final') {
-    // 最终结果的波长分组
-    return data
-  } else {
-    // 单个文件的波长分组
-    return data.data || []
-  }
-}
-
-// 修改分页器显示条件的判断函数
-const hasValidData = (data, selectedType, activeTab) => {
-  if (!data) return false
-  
-  if (selectedType === 'shimazu-lc30&lc2030') {
-    if (activeTab === 'final') {
-      return Array.isArray(data) && data.length > 0 && data.some(group => Array.isArray(group) && group.length > 0)
-    } else {
-      return data.data && Array.isArray(data.data) && data.data.length > 0
-    }
-  } else {
-    return Array.isArray(data) && data.length > 0
-  }
-}
-
-// 修改getTotalCount函数
-const getTotalCount = (data, selectedType, activeTab) => {
-  if (!data) return 0
-  
-  if (selectedType === 'shimazu-lc30&lc2030') {
-    if (activeTab === 'final' && Array.isArray(data)) {
-      return data.reduce((total, group) => {
-        if (Array.isArray(group)) {
-          return total + group.length
-        }
-        return total
-      }, 0)
-    } else if (activeTab === 'single' && data.data && Array.isArray(data.data)) {
-      return data.data.reduce((total, group) => {
-        if (Array.isArray(group)) {
-          return total + group.length
-        }
-        return total
-      }, 0)
-    }
-  } else if (Array.isArray(data)) {
-    return data.length
-  }
-  return 0
 }
 
 // 处理岛津液相数据
@@ -597,13 +338,6 @@ const calculateIndex = (index, pagination) => {
 // 添加行样式函数
 const tableRowClassName = ({ rowIndex }) => {
   return `row-${rowIndex}`
-}
-
-// 修改shouldShowData函数
-const shouldShowData = (data, selectedType, activeTab) => {
-  if (!data) return false
-  if (selectedType === 'shimazu-lc30&lc2030' && activeTab === 'single' ? !data.data : data.length === 0) return false
-  return true
 }
 </script>
 

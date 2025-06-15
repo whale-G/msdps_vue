@@ -5,93 +5,14 @@
       :process-function="handleProcess"
       :handle-result-data="handleResultData"
     >
-      <!-- 自定义表格渲染 -->
+      <!-- 使用GCRender组件 -->
       <template #result-table="{ currentData, pagination, activeTab, selectedType }">
-        <div class="table-wrapper">
-          <el-table
-            v-if="currentData && currentData.length > 0"
-            :data="currentData.slice(
-              (pagination.currentPage - 1) * pagination.pageSize,
-              pagination.currentPage * pagination.pageSize
-            )"
-            border
-            stripe
-            size="small"
-            style="width: 100%"
-            class="data-table"
-            height="calc(100vh - 280px)"
-            :row-class-name="tableRowClassName"
-          >
-            <!-- 添加行号列 -->
-            <el-table-column
-              type="index"
-              label="序号"
-              width="60"
-              align="center"
-              :index="(index) => calculateIndex(index, pagination)"
-              fixed="left"
-            />
-            <!-- 根据activeTab和selectedType显示不同的表格结构 -->
-            <template v-if="activeTab === 'final'">
-              <!-- 汇总结果表格结构 -->
-              <template v-if="selectedType === 'agilent-7890'">
-                <el-table-column
-                  prop="segName"
-                  label="检测项目(segName)"
-                  min-width="120"
-                  fixed="left"
-                />
-                <!-- 动态生成文件列 -->
-                <template v-for="column in getTableColumns(selectedType).final(getFileList(currentData, selectedType))" :key="column.label">
-                  <el-table-column :label="column.label" align="center">
-                    <template v-for="child in column.children" :key="child.prop">
-                      <el-table-column
-                        :prop="child.prop"
-                        :label="child.label"
-                        :min-width="child.minWidth"
-                        align="center"
-                      />
-                    </template>
-                  </el-table-column>
-                </template>
-              </template>
-            </template>
-
-            <template v-else>
-              <!-- 单个文件的表格结构 -->
-              <template v-if="selectedType === 'agilent-7890'">
-                <template v-for="column in getTableColumns(selectedType).single" :key="column.prop">
-                  <el-table-column
-                    :prop="column.prop"
-                    :label="column.label"
-                    :min-width="column.minWidth"
-                    :align="column.align"
-                    :fixed="column.fixed"
-                  />
-                </template>
-              </template>
-            </template>
-          </el-table>
-
-          <!-- 分页器 -->
-          <div class="pagination-container" v-if="currentData && currentData.length > 0">
-            <el-pagination
-              v-model:current-page="pagination.currentPage"
-              v-model:page-size="pagination.pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :total="currentData.length"
-              layout="total, sizes, prev, pager, next, jumper"
-              @size-change="pagination.handleSizeChange"
-              @current-change="pagination.handleCurrentChange"
-              background
-            />
-          </div>
-
-          <!-- 无数据时显示 -->
-          <div v-if="!currentData || currentData.length === 0" class="no-data">
-            <el-empty description="暂无数据" />
-          </div>
-        </div>
+        <GCRender
+          :current-data="currentData"
+          :pagination="pagination"
+          :active-tab="activeTab"
+          :selected-type="selectedType"
+        />
       </template>
     </FileUpload>
   </div>
@@ -99,6 +20,7 @@
 
 <script setup>
 import FileUpload from '@/components/FileUpload.vue'
+import GCRender from '@/components/renders/GCRender.vue'
 import { processGC } from '@/api/DocProcess'
 
 const typeOptions = [
@@ -154,86 +76,6 @@ const handleResultData = (result) => {
     single_results: processedSingleResults,
     total_result: processedTotalResult
   }
-}
-
-// 辅助函数：获取文件名列表
-const getFileList = (data, selectedType) => {
-  if (!data || data.length === 0) return []
-
-  switch (selectedType) {
-    case 'agilent-7890':
-      const firstRow = data[0]    // 获取第一行数据
-      return Object.keys(firstRow)
-        .filter(key => key !== 'segName')   // 过滤掉segName列
-        .map(key => key.split('_')[0])      // 提取文件名（将 'Report01.xls_Area' 转换为 'Report01.xls'）
-        .filter((value, index, self) => self.indexOf(value) === index)   // 去重（"Report01.xls_Area" 和 "Report01.xls_PPM" 只保留一个）
-      
-    // 为未来其他类型预留
-    default:
-      return []
-  }
-}
-
-// 辅助函数：获取表格列配置
-const getTableColumns = (selectedType) => {
-  switch (selectedType) {
-    case 'agilent-7890':
-      return {
-        single: [
-          {
-            prop: 'segName',
-            label: '检测项目(segName)',
-            minWidth: 120,
-            fixed: 'left'
-          },
-          {
-            prop: 'Area',
-            label: 'Area',
-            minWidth: 100,
-            align: 'center'
-          },
-          {
-            prop: 'PPM',
-            label: 'PPM',
-            minWidth: 100,
-            align: 'center'
-          }
-        ],
-        final: (files) => files.map(file => ({
-          label: file,
-          children: [
-            {
-              prop: `${file}_Area`,
-              label: 'Area',
-              minWidth: 100
-            },
-            {
-              prop: `${file}_PPM`,
-              label: 'PPM',
-              minWidth: 100
-            }
-          ]
-        }))
-      }
-    
-    // 为未来其他类型预留
-    default:
-      return {
-        single: [],
-        final: () => []
-      }
-  }
-}
-
-// 添加行号计算函数
-const calculateIndex = (index, pagination) => {
-  if (!pagination) return index + 1
-  return (pagination.currentPage - 1) * pagination.pageSize + index + 1
-}
-
-// 添加行样式函数
-const tableRowClassName = ({ rowIndex }) => {
-  return `row-${rowIndex}`
 }
 </script>
 

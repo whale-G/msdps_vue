@@ -235,6 +235,8 @@ const props = defineProps({
   }
 })
 
+console.log('当前props:', props.processResult)
+
 const emit = defineEmits(['update:activeTab'])
 
 // 分页状态

@@ -3,10 +3,6 @@
     <el-card class="detail-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <el-button type="primary" @click="goBack" size="small" class="back-button">
-            <el-icon><Back /></el-icon>
-            返回结果列表
-          </el-button>
           <span class="title">处理详情</span>
         </div>
       </template>
@@ -18,36 +14,40 @@
           <GCRender
             v-if="isGCType"
             :current-data="currentData"
-            :pagination="pagination"
-            :active-tab="activeTab"
+            v-model:active-tab="activeTab"
+            :process-result="processResult"
             :selected-type="getFileType(detailData.file_type)"
+            :on-back="handleBack"
           />
           
           <!-- 气质数据渲染 -->
           <GCMSRender
             v-else-if="isGCMSType"
             :current-data="currentData"
-            :pagination="pagination"
-            :active-tab="activeTab"
+            v-model:active-tab="activeTab"
+            :process-result="processResult"
             :selected-type="getFileType(detailData.file_type)"
+            :on-back="handleBack"
           />
           
           <!-- 液相数据渲染 -->
           <LCRender
             v-else-if="isLCType"
             :current-data="currentData"
-            :pagination="pagination"
-            :active-tab="activeTab"
+            v-model:active-tab="activeTab"
+            :process-result="processResult"
             :selected-type="getFileType(detailData.file_type)"
+            :on-back="handleBack"
           />
           
           <!-- 液质数据渲染 -->
           <LCMSRender
             v-else-if="isLCMSType"
             :current-data="currentData"
-            :pagination="pagination"
-            :active-tab="activeTab"
+            v-model:active-tab="activeTab"
+            :process-result="processResult"
             :selected-type="getFileType(detailData.file_type)"
+            :on-back="handleBack"
           />
           
           <!-- 未知类型数据 -->
@@ -65,7 +65,6 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getSearchDataDetail } from '@/api/search'
 import { ElMessage } from 'element-plus'
-import { Back } from '@element-plus/icons-vue'
 
 // 导入各种类型的渲染组件
 import GCRender from '@/components/renders/GCRender.vue'
@@ -73,24 +72,23 @@ import GCMSRender from '@/components/renders/GCMSRender.vue'
 import LCRender from '@/components/renders/LCRender.vue'
 import LCMSRender from '@/components/renders/LCMSRender.vue'
 
+// 导入各种类型的响应数据处理函数
+import { 
+  handleAgilentGCResultData,
+  handleShimazuGCMSData,
+  handleThermoGCMSData,
+  handleShimazuLCData,
+  handleAgilentLCData,
+  handleAbLCMSData,
+  handleAgilentLCMSData 
+} from '@/utils/data-process'
+
+// 组件状态
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 const detailData = ref(null)
 const activeTab = ref('file0')
-
-// 分页相关
-const pagination = ref({
-  currentPage: 1,
-  pageSize: 20,
-  handleSizeChange: (val) => {
-    pagination.value.pageSize = val
-    pagination.value.currentPage = 1
-  },
-  handleCurrentChange: (val) => {
-    pagination.value.currentPage = val
-  }
-})
 
 // 文件类型判断
 const isGCType = computed(() => {
@@ -111,39 +109,89 @@ const isLCMSType = computed(() => {
 
 // 获取当前显示的数据
 const currentData = computed(() => {
-  if (!detailData.value) return []
+  // 如果没有处理结果，返回空数组
+  if (!processResult.value) return []
   
+   // 如果选择的是最终结果，返回汇总结果
   if (activeTab.value === 'final') {
-    return detailData.value.total_result || []
+    return processResult.value.total_result || []
   } else {
+    // 获取单个文件的结果
     const index = parseInt(activeTab.value.replace('file', ''))
-    if (isNaN(index) || !detailData.value.single_results[index]) return []
-    return detailData.value.single_results[index] || []
+    if (isNaN(index) || !processResult.value.single_results[index]) return []
+    return processResult.value.single_results[index] || []
+  }
+})
+
+// 根据文件类型，处理响应数据
+const processResult = computed(() => {
+  let processedData
+  switch(detailData.value.file_type) {
+    case 'gc-ajl-7890':
+      processedData = handleAgilentGCResultData(detailData.value)
+      return {
+        ...processedData,
+        type: 'agilent-7890'
+      }
+    case 'gcms-shimazu-2010&8050':
+      processedData = handleShimazuGCMSData(detailData.value, 'shimazu-2010&8050')
+      return {
+        ...processedData,
+        type: 'shimazu-2010&8050'
+      }
+    case 'gcms-thermo':
+      processedData = handleThermoGCMSData(detailData.value, 'thermo')
+      return {
+        ...processedData,
+        type: 'thermo'
+      }
+    case 'lc-shimazu-lc30&lc2030':
+      processedData = handleShimazuLCData(detailData.value)
+      return {
+        ...processedData,
+        type: 'shimazu-lc30&lc2030'
+      }
+    case 'lc-ajl-1290':
+      processedData = handleAgilentLCData(detailData.value)
+      return {
+        ...processedData,
+        type: 'agilent-1290'
+      }
+    case 'lcms-ab':
+      processedData = handleAbLCMSData(detailData.value)
+      return {
+        single_results: processedData,
+        total_result: null,
+        type: 'ab'
+      }
+    case 'lcms-ajl-6470':
+      processedData = handleAgilentLCMSData(detailData.value)
+      return {
+        ...processedData,
+        type: 'agilent-6470'
+      }
+    default:
+      return { single_results: [], total_result: [], type: "未知" }
   }
 })
 
 // 文件类型映射
 const fileTypeMap = {
   'gc-ajl-7890': 'agilent-7890',
-  'gcms-shimazu-2010&8050': 'shimazu-gcms',
-  'gcms-thermo': 'thermo-gcms',
-  'lc-shimazu-lc30&lc2030': 'shimazu-lc',
+  'gcms-shimazu-2010&8050': 'shimazu-2010&8050',
+  'gcms-thermo': 'thermo',
+  'lc-shimazu-lc30&lc2030': 'shimazu-lc30&lc2030',
   'lc-ajl-1290': 'agilent-1290',
-  'lcms-ab': 'ab-lcms',
+  'lcms-ab': 'ab',
   'lcms-ajl-6470': 'agilent-6470'
 }
 
-// 获取对应的文件类型
+// 根据映射，获取响应数据对应的文件类型
 const getFileType = (type) => {
   return fileTypeMap[type] || type
 }
 
-// 返回列表
-const goBack = () => {
-  router.back()
-}
-
-// 获取详情数据
+// 发送请求，获取详情数据
 const fetchDetailData = async () => {
   const { process_id, process_type } = route.query
   if (!process_id || !process_type) {
@@ -153,22 +201,25 @@ const fetchDetailData = async () => {
 
   loading.value = true
   try {
-    const response = await getSearchDataDetail({
-      process_id,
-      process_type
-    })
+    const response = await getSearchDataDetail(process_id, process_type)
     
     if (response?.status === 'success' && response.result) {
       detailData.value = response.result
     } else {
+      console.warn('响应数据异常:', response)
       ElMessage.warning('暂无详情数据')
     }
   } catch (error) {
-    console.error('获取详情数据失败:', error)
-    ElMessage.error('获取详情数据失败')
+    console.error('获取详情数据失败:', error.response || error)
+    ElMessage.error(error.response?.data?.message || '获取详情数据失败')
   } finally {
     loading.value = false
   }
+}
+
+// 返回处理（ResultDisplay组件会使用）
+const handleBack = () => {
+  router.back()
 }
 
 // 组件挂载时获取数据

@@ -103,7 +103,7 @@ import { processGC } from '@/api/DocProcess'
 
 const typeOptions = [
   {
-    label: '安捷伦气相7890',
+    label: '安捷伦气相（7890）',
     value: 'agilent-7890'
   }
 ]

@@ -42,6 +42,12 @@ const router = createRouter({
           meta: { title: '搜索', parent: '首页' }
         },
         {
+          path: '/search/detail',
+          name: 'search-detail',
+          component: () => import('@/views/SearchDetail.vue'),
+          meta: { title: '搜索详情', parent: '搜索' }
+        },
+        {
           path: '/settings',
           name: 'settings',
           component: UserSettings,

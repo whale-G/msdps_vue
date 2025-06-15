@@ -110,7 +110,7 @@ const route = useRoute()
 // 仪器类型选项
 const typeOptions = [
   {
-    label: '岛津气质2020&8050',
+    label: '岛津气质（2020&8050）',
     value: 'shimazu-2010&8050'
   },
   {

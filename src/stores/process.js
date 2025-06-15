@@ -1,7 +1,8 @@
+// 数据处理模块的状态管理
+
 import { defineStore } from 'pinia'
 import { useUserStore } from './user'
 import * as XLSX from 'xlsx'
-import { ref } from 'vue'
 
 export const useProcessStore = defineStore('process', {
   state: () => ({

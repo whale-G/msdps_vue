@@ -1,3 +1,5 @@
+// 用户模块的状态管理
+
 import { defineStore } from 'pinia'
 import { login, register, changePassword } from '@/api/user'
 import { getRandomAvatar } from '@/utils/avatars'

@@ -3,7 +3,7 @@
     <FileUpload
       :type-options="typeOptions"
       :process-function="handleProcess"
-      :handle-result-data="handleResultData"
+      :handle-result-data="handleAgilentGCResultData"
     >
       <!-- 使用GCRender组件 -->
       <template #result-table="{ currentData, pagination, activeTab, selectedType }">
@@ -22,7 +22,9 @@
 import FileUpload from '@/components/FileUpload.vue'
 import GCRender from '@/components/renders/GCRender.vue'
 import { processGC } from '@/api/DocProcess'
+import { handleAgilentGCResultData } from '@/utils/data-process'
 
+// 处理文件类型选项
 const typeOptions = [
   {
     label: '安捷伦气相（7890）',
@@ -30,51 +32,12 @@ const typeOptions = [
   }
 ]
 
+// 发起请求，处理文件
 const handleProcess = async (files, selectedType, taskId) => {
   if (selectedType === 'agilent-7890') {
     return processGC(files, taskId)
   } else {
     throw new Error('请选择正确的处理类型')
-  }
-}
-
-// 数据处理逻辑
-const handleResultData = (result) => {
-  // 检查数据是否存在
-  if (!result || !result.single_results || !result.total_result) 
-    return result
-
-  // 处理单个文件的结果
-  const processedSingleResults = result.single_results.map(fileResult => {
-    return fileResult.data.map(item => ({
-      ...item,
-      // 格式化数据
-      Area: Number(item.Area).toFixed(5),   // 格式化数值到5位小数
-      PPM: Number(item.PPM).toFixed(5)
-    }))
-  })
-
-  // 处理汇总结果
-  const processedTotalResult = result.total_result.map(item => {
-    const row = {
-      segName: item.segName
-    }
-    
-    // 遍历所有文件名添加对应的 Area 和 PPM 值
-    Object.keys(item).forEach(key => {
-      if (key !== 'segName') {
-        row[`${key}_Area`] = item[key].Area.toFixed(5)
-        row[`${key}_PPM`] = item[key].PPM.toFixed(5)
-      }
-    })
-
-    return row
-  })
-
-  return {
-    ...result,
-    single_results: processedSingleResults,
-    total_result: processedTotalResult
   }
 }
 </script>

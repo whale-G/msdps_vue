@@ -4,7 +4,7 @@
     <el-aside :width="isCollapse ? '64px' : '220px'" class="aside" :class="{ 'is-collapse': isCollapse }">
       <div class="logo-container">
         <img src="@/assets/vue.svg" alt="Logo" class="logo">
-        <h1 class="title" v-show="!isCollapse">MSDPT系统</h1>
+        <h1 class="title" v-show="!isCollapse">小西数据员</h1>
       </div>
       <el-menu
         :default-active="$route.path"
@@ -15,51 +15,131 @@
         active-text-color="#409EFF"
         router
       >
-        <el-menu-item index="/home">
-          <el-icon><HomeFilled /></el-icon>
-          <template #title>首页</template>
-        </el-menu-item>
-        <el-sub-menu index="/data-process">
-          <template #title>
-            <el-icon><Document /></el-icon>
-            <span>数据处理</span>
-          </template>
+        <div class="menu-category" :class="{ 'collapsed': isCollapse }">
+          <span class="category-title">
+            <el-icon><Minus /></el-icon>
+            <span class="category-text">导航</span>
+          </span>
+        </div>
+        <el-tooltip
+          content="首页"
+          placement="right"
+          :disabled="!isCollapse"
+        >
+          <el-menu-item index="/home">
+            <el-icon><HomeFilled /></el-icon>
+            <template #title>首页</template>
+          </el-menu-item>
+        </el-tooltip>
+
+        <div class="menu-category" :class="{ 'collapsed': isCollapse }">
+          <span class="category-title">
+            <el-icon><Minus /></el-icon>
+            <span class="category-text">数据处理</span>
+          </span>
+        </div>
+        <el-tooltip
+          content="气相数据处理"
+          placement="right"
+          :disabled="!isCollapse"
+        >
           <el-menu-item index="/data-process/gc">
             <el-icon><Document /></el-icon>
             <span>气相数据处理</span>
           </el-menu-item>
+        </el-tooltip>
+        <el-tooltip
+          content="气质数据处理"
+          placement="right"
+          :disabled="!isCollapse"
+        >
           <el-menu-item index="/data-process/gcms">
             <el-icon><Document /></el-icon>
             <span>气质数据处理</span>
           </el-menu-item>
+        </el-tooltip>
+        <el-tooltip
+          content="液相数据处理"
+          placement="right"
+          :disabled="!isCollapse"
+        >
           <el-menu-item index="/data-process/lc">
             <el-icon><Document /></el-icon>
             <span>液相数据处理</span>
           </el-menu-item>
+        </el-tooltip>
+        <el-tooltip
+          content="液质数据处理"
+          placement="right"
+          :disabled="!isCollapse"
+        >
           <el-menu-item index="/data-process/lcms">
             <el-icon><Document /></el-icon>
             <span>液质数据处理</span>
           </el-menu-item>
-        </el-sub-menu>
-        <el-sub-menu index="/system" v-if="userStore.isAdmin">
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item index="/system/user">
-            <el-icon><User /></el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/system/permission">
-            <el-icon><Lock /></el-icon>
-            <span>权限管理</span>
-          </el-menu-item>
-        </el-sub-menu>
+        </el-tooltip>
+
+        <div class="menu-category" :class="{ 'collapsed': isCollapse }"  v-if="userStore.isAdmin">
+          <span class="category-title">
+            <el-icon><Minus /></el-icon>
+            <span class="category-text">系统管理</span>
+          </span>
+        </div>
+          <el-sub-menu index="/system" v-if="userStore.isAdmin">
+            <template #title>
+              <el-icon><Setting /></el-icon>
+              <span>系统管理</span>
+            </template>
+            <el-tooltip
+              content="用户管理"
+              placement="right"
+              :disabled="!isCollapse"
+            >
+              <el-menu-item index="/system/user">
+                <el-icon><User /></el-icon>
+                <span>用户管理</span>
+              </el-menu-item>
+            </el-tooltip>
+            <el-tooltip
+              content="权限管理"
+              placement="right"
+              :disabled="!isCollapse"
+            >
+              <el-menu-item index="/system/permission">
+                <el-icon><Lock /></el-icon>
+                <span>权限管理</span>
+              </el-menu-item>
+            </el-tooltip>
+          </el-sub-menu>
         <div class="menu-spacer"></div>
-        <el-menu-item index="/settings">
-          <el-icon><Tools /></el-icon>
-          <template #title>用户设置</template>
-        </el-menu-item>
+
+        <div class="menu-category" :class="{ 'collapsed': isCollapse }">
+          <span class="category-title">
+            <el-icon><Minus /></el-icon>
+            <span class="category-text">About-User</span>
+          </span>
+        </div>
+        <el-tooltip
+          content="用户帮助"
+          placement="right"
+          :disabled="!isCollapse"
+        >
+          <el-menu-item index="/help">
+            <el-icon><QuestionFilled /></el-icon>
+            <template #title>用户帮助</template>
+          </el-menu-item>
+        </el-tooltip>
+
+        <el-tooltip
+          content="用户设置"
+          placement="right"
+          :disabled="!isCollapse"
+        >
+          <el-menu-item index="/settings">
+            <el-icon><Tools /></el-icon>
+            <template #title>用户设置</template>
+          </el-menu-item>
+        </el-tooltip>
       </el-menu>
     </el-aside>
 
@@ -223,7 +303,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   User, Lock, HomeFilled, Setting, UserFilled,
   Key, SwitchButton, Expand, Fold, Plus,
-  Document, Bell, Refresh, Monitor, Timer, ArrowDown, Moon, Sunny, Tools
+  Document, Bell, Refresh, Monitor, Timer, ArrowDown, Moon, Sunny, Tools, Minus, QuestionFilled
 } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user'
 import { useProcessStore } from '../stores/process'
@@ -526,7 +606,7 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
     top: 0;
     bottom: 0;
     z-index: 1001;
-    transition: width 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background-color: var(--el-bg-color);
     border-right: 1px solid var(--el-border-color-light);
     overflow-x: hidden;
@@ -555,12 +635,14 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
         font-weight: 600;
         color: var(--el-text-color-primary);
         white-space: nowrap;
+        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
     }
     
     .menu {
       height: calc(100% - 60px);
       border: none;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 }
@@ -568,7 +650,7 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
 .el-container {
   min-height: 100vh;
   margin-left: 220px;
-  transition: margin-left 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   &.is-collapsed {
     margin-left: 64px;
@@ -584,7 +666,7 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
     z-index: 1000;
     background-color: var(--el-bg-color);
     border-bottom: 1px solid var(--el-border-color-light);
-    transition: left 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -621,6 +703,7 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
     font-weight: 600;
     color: var(--el-text-color-primary);
     white-space: nowrap;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -628,6 +711,8 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
   height: calc(100% - 60px); /* 减去logo容器的高度 */
   display: flex;
   flex-direction: column;
+  border-right: none !important;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .menu-spacer {
@@ -669,11 +754,12 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
   align-items: center;
   justify-content: center;
   background-color: transparent;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .collapse-btn .el-icon {
   font-size: 20px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .header-right {
@@ -858,7 +944,7 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
 }
 
 .theme-toggle .el-icon {
-  transition: transform 0.3s;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .theme-toggle:hover .el-icon {
@@ -1014,5 +1100,104 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
   margin: 8px 0 0;
   font-size: 14px;
   color: #666;
+}
+
+/* 添加新的样式 */
+.menu-category {
+  padding: 8px 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  
+  &.collapsed {
+    padding: 8px 4px;
+    
+    .category-text {
+      display: none;
+    }
+    
+    .category-title {
+      justify-content: center;
+    }
+  }
+}
+
+.category-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  opacity: 0.8;
+  
+  .el-icon {
+    font-size: 14px;
+  }
+}
+
+/* 菜单项样式现代化 */
+.el-menu-item {
+  margin: 4px 8px;
+  height: 44px;
+  line-height: 44px;
+  border-radius: 8px;
+  transition: all 0.3s;
+  
+  &:hover {
+    background-color: var(--el-color-primary-light-9) !important;
+  }
+  
+  &.is-active {
+    background-color: var(--el-color-primary-light-8) !important;
+    color: var(--el-color-primary) !important;
+    font-weight: 500;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 16px;
+      background-color: var(--el-color-primary);
+      border-radius: 0 2px 2px 0;
+    }
+  }
+}
+
+/* 深色模式适配 */
+:deep(.dark) {
+  .menu-category {
+    color: var(--el-text-color-secondary);
+  }
+
+  .el-menu-item {
+    &:hover {
+      background-color: var(--el-color-primary-dark-2) !important;
+    }
+    
+    &.is-active {
+      background-color: var(--el-color-primary-dark-1) !important;
+      color: var(--el-color-primary-light-5) !important;
+    }
+  }
+}
+
+/* 折叠状态适配 */
+.aside.is-collapse {
+  .menu-category {
+    text-align: center;
+    padding: 8px 0;
+    
+    .category-title {
+      justify-content: center;
+    }
+  }
+  
+  .el-menu-item {
+    margin: 4px;
+    padding: 0 !important;
+    justify-content: center;
+  }
 }
 </style> 

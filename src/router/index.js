@@ -3,6 +3,7 @@ import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Home from '@/views/Home.vue'
+import userHelp from '@/views/userHelp.vue'
 import GCProcess from '@/views/data-process/GCProcess.vue'
 import GCMSProcess from '@/views/data-process/GCMSProcess.vue'
 import LCProcess from '@/views/data-process/LCProcess.vue'
@@ -52,6 +53,12 @@ const router = createRouter({
           name: 'settings',
           component: UserSettings,
           meta: { title: '用户设置', parent: '首页' }
+        },
+        {
+          path: '/help',
+          name: 'help',
+          component: userHelp,
+          meta: { title: '用户帮助' }
         },
         {
           path: '/data-process',

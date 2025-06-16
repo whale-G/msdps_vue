@@ -190,8 +190,6 @@ const safeNumberConvert = (value, precision = 3) => {
 
 // 热电气质响应数据处理逻辑
 export const handleThermoGCMSData = (result, selectedType) => {
-    console.log('handleThermoData called with result:', result.total_result[0])
-    console.log('handleThermoData called with result:', result.single_results[0][0])
     if (!result || !result.single_results || !result.total_result) 
       return result
   

@@ -38,14 +38,11 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Plus, Download, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
-import * as XLSX from 'xlsx'
 import { useProcessStore } from '@/stores/process'
-import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
 const processStore = useProcessStore()
-const userStore = useUserStore()
 const showActions = ref(false)
 const ballContainer = ref(null)
 let mouseLeaveTimer = null
@@ -182,7 +179,8 @@ const props = defineProps({
 
 // 判断是否在数据处理页面
 const isDataProcessPage = computed(() => {
-  return ['gc-process', 'gcms-process', 'lc-process', 'lcms-process'].includes(route.name)
+  console.log(route.name)
+  return ['gc-process', 'gcms-process', 'lc-process', 'lcms-process', 'search-detail'].includes(route.name)
 })
 
 // 计算当前页面是否有数据可下载
@@ -199,224 +197,40 @@ const hasDownloadableData = computed(() => {
   )
 })
 
+// 处理Excel下载逻辑
 const handleExcelDownload = () => {
+  // 检查是否在数据处理页面
+  if (!isDataProcessPage.value) {
+    ElMessage.warning('当前页面不支持数据下载')
+    return
+  }
+
   // 检查是否有数据可下载
   if (!hasDownloadableData.value) {
     ElMessage.warning('当前页面没有可下载的数据')
     return
   }
 
-  // 获取当前页面数据和选中的类型
-  const currentPageData = processStore.getCurrentPageData(route.name)
-  const selectedType = processStore.getCurrentPageSelectedType(route.name)
-
-  // 添加调试日志
-  console.log('当前页面：', route.name)
-  console.log('选中类型：', selectedType)
-  console.log('当前数据：', currentPageData)
-
   try {
-    const workbook = XLSX.utils.book_new()
-    const pageTypeMap = {
-      'gc-process': '气相',
-      'gcms-process': '气质',
-      'lc-process': '液相',
-      'lcms-process': '液质'
-    }
-
-    // 特殊类型处理
-    if (route.name === 'lc-process' && selectedType === 'shimazu-lc30&lc2030') {
-      // 检查数据结构
-      if (!currentPageData.single_results?.[0]?.data) {
-        throw new Error('岛津液相数据格式不正确')
-      }
-      // 处理岛津液相数据...
-      // 保持原有的岛津液相处理逻辑
-    } else if (route.name === 'lcms-process' && selectedType === 'ab') {
-      // 检查数据结构
-      if (!currentPageData.single_results?.[0]?.compound_list || !currentPageData.single_results?.[0]?.data) {
-        throw new Error('AB液质数据格式不正确')
-      }
-
-      // 处理AB液质数据
-      currentPageData.single_results.forEach((fileResult, fileIndex) => {
-        if (fileResult && fileResult.compound_list && fileResult.data) {
-          // 获取所有化合物名称
-          const compounds = fileResult.compound_list
-
-          // 创建表头数据
-          const headers = [
-            ['序号', '样品名称', '样品类型', '目标浓度（ng/ml）']
-          ]
-          
-          // 添加化合物表头
-          compounds.forEach(compound => {
-            headers[0].push(compound, '', '') // 为每个化合物预留三列
-          })
-
-          // 创建子表头
-          const subHeaders = [
-            '序号', '样品名称', '样品类型', '目标浓度（ng/ml）'
-          ]
-          compounds.forEach(() => {
-            subHeaders.push('峰面积（cps）', 'RT', '计算浓度（ng/ml）')
-          })
-
-          // 创建数据行
-          const rows = fileResult.data[0].map((sample, index) => {
-            const dataRow = [
-              index + 1,
-              sample['Sample Name'],
-              sample['Sample Type'],
-              sample['Target  [Conc]. (ng/ml)']
-            ]
-
-            // 添加每个化合物的数据
-            fileResult.data.forEach((compoundData, compoundIndex) => {
-              const sampleData = compoundData[index]
-              dataRow.push(
-                sampleData['Area (cps)'],
-                sampleData['RT (min)'],
-                sampleData['[Calculated Conc]. (ng/ml)']
-              )
-            })
-
-            return dataRow
-          })
-
-          // 合并所有数据
-          const allData = [
-            headers[0],
-            subHeaders,
-            ...rows
-          ]
-
-          // 创建工作表
-          const ws = XLSX.utils.aoa_to_sheet(allData)
-
-          // 设置合并单元格
-          ws['!merges'] = []
-          
-          // 合并固定列的表头
-          for (let i = 0; i < 4; i++) {
-            ws['!merges'].push({
-              s: { r: 0, c: i },
-              e: { r: 1, c: i }
-            })
-          }
-
-          // 合并化合物表头
-          compounds.forEach((_, index) => {
-            const startCol = 4 + index * 3
-            ws['!merges'].push({
-              s: { r: 0, c: startCol },
-              e: { r: 0, c: startCol + 2 }
-            })
-          })
-
-          // 设置列宽
-          ws['!cols'] = [
-            { wch: 8 },  // 序号
-            { wch: 15 }, // 样品名称
-            { wch: 12 }, // 样品类型
-            { wch: 15 }, // 目标浓度
-            ...compounds.flatMap(() => [
-              { wch: 15 }, // 峰面积
-              { wch: 10 }, // RT
-              { wch: 15 }  // 计算浓度
-            ])
-          ]
-
-          XLSX.utils.book_append_sheet(workbook, ws, `文件${fileIndex + 1}`)
-        }
-      })
+    const success = processStore.downloadResults(route.name)
+    if (success) {
+      ElMessage.success('Excel文件下载成功')
     } else {
-      // 统一处理其他类型数据
-      // 处理单个文件的结果
-      if (currentPageData.single_results?.length > 0) {
-        currentPageData.single_results.forEach((fileResult, index) => {
-          // 处理不同的数据结构
-          let data = Array.isArray(fileResult) ? fileResult : 
-                    Array.isArray(fileResult.data) ? fileResult.data : null
-
-          // 特别处理安捷伦液质的单位列
-          if (route.name === 'lcms-process' && selectedType === 'agilent-6470' && data) {
-            data = data.map(row => ({
-              ...row,
-              '单位': fileResult.concentration_unit || ''
-            }))
-          }
-
-          if (data && data.length > 0) {
-            const ws = XLSX.utils.json_to_sheet(data)
-            // 设置列宽
-            if (data[0]) {
-              const columnWidths = Object.keys(data[0]).map(key => ({ wch: Math.max(key.length * 2, 10) }))
-              ws['!cols'] = columnWidths
-            }
-            XLSX.utils.book_append_sheet(workbook, ws, `文件${index + 1}`)
-          }
-        })
-      }
-
-      // 处理汇总结果
-      if (Array.isArray(currentPageData.total_result) && currentPageData.total_result.length > 0) {
-        const totalWs = XLSX.utils.json_to_sheet(currentPageData.total_result)
-        // 设置列宽
-        if (currentPageData.total_result[0]) {
-          const columnWidths = Object.keys(currentPageData.total_result[0]).map(key => ({ wch: Math.max(key.length * 2, 10) }))
-          totalWs['!cols'] = columnWidths
-        }
-        XLSX.utils.book_append_sheet(workbook, totalWs, '最终结果')
-      }
+      ElMessage.error('下载失败，请稍后重试')
     }
-
-    // 检查是否成功添加了工作表
-    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-      throw new Error('没有可导出的数据')
-    }
-
-    // 生成文件名
-    const pageType = pageTypeMap[route.name] || '数据'
-    const fileName = `${pageType}处理结果_${new Date().toLocaleString().replace(/[/:]/g, '-')}.xlsx`
-
-    // 获取用户设置的下载路径
-    const userSettings = userStore.getSettings
-    const downloadPath = userSettings.downloadPath
-
-    // 写入文件
-    if (downloadPath) {
-      try {
-        XLSX.writeFile(workbook, `${downloadPath}/${fileName}`)
-      } catch (error) {
-        console.warn('无法使用自定义下载路径，使用默认路径')
-        XLSX.writeFile(workbook, fileName)
-      }
-    } else {
-      XLSX.writeFile(workbook, fileName)
-    }
-
-    ElMessage.success('Excel文件下载成功')
   } catch (error) {
     console.error('下载失败:', error)
-    ElMessage.error('下载失败：' + error.message)
+    ElMessage.error(error.message || '下载失败')
   }
 }
 
+// 进入搜索模块界面
 const handleSearch = () => {
   router.push({
     path: '/search',
     query: {
       from: route.path
     }
-  })
-}
-
-// 处理返回顶部
-const handleBackToTop = () => {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth'
   })
 }
 

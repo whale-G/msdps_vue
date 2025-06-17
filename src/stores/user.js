@@ -20,7 +20,9 @@ export const useUserStore = defineStore('user', {
   }),
 
   getters: {
-    isLoggedIn: (state) => !!state.token,
+    isLoggedIn: (state) => {
+      return !!(state.token && state.userInfo?.account)
+    },
     getToken: (state) => state.token,
     getUserInfo: (state) => state.userInfo,
     getSettings: (state) => state.settings,
@@ -37,23 +39,18 @@ export const useUserStore = defineStore('user', {
       try {
         // 从localStorage获取存储的数据
         const storedData = localStorage.getItem('msdpt-user')
-        if (storedData) {
+        const token = localStorage.getItem('access_token')
+        const refreshToken = localStorage.getItem('refresh_token')
+        
+        if (storedData && token && refreshToken) {
           const parsedData = JSON.parse(storedData)
           
           // 恢复token
-          if (parsedData.token) {
-            this.token = parsedData.token
-            localStorage.setItem('access_token', parsedData.token)
-          }
-          
-          // 恢复refreshToken
-          if (parsedData.refreshToken) {
-            this.refreshToken = parsedData.refreshToken
-            localStorage.setItem('refresh_token', parsedData.refreshToken)
-          }
+          this.token = token
+          this.refreshToken = refreshToken
           
           // 恢复用户信息
-          if (parsedData.userInfo) {
+          if (parsedData.userInfo?.account) {
             this.setUserInfo(parsedData.userInfo)
           }
           
@@ -64,11 +61,16 @@ export const useUserStore = defineStore('user', {
               ...parsedData.settings  // 覆盖存储的值
             }
           }
+
+          return true
         }
+        
+        return false
       } catch (error) {
         console.error('Failed to initialize store:', error)
         // 如果出错，清除所有数据重新开始
         this.clearUserData()
+        return false
       }
     },
 
@@ -95,7 +97,7 @@ export const useUserStore = defineStore('user', {
     setUserInfo(userInfo) {
       if (!userInfo || !userInfo.account) {
         console.warn('setUserInfo: Invalid user info')
-        return
+        return false
       }
       
       // 创建一个新的用户信息对象，确保包含所有必要字段
@@ -109,6 +111,7 @@ export const useUserStore = defineStore('user', {
       this.userInfo = processedUserInfo
       this.updateLoginTime()
       this.persistState()
+      return true
     },
 
     updateLoginTime() {
@@ -119,13 +122,26 @@ export const useUserStore = defineStore('user', {
 
     // 持久化状态
     persistState() {
-      const storeData = {
-        token: this.token,
-        refreshToken: this.refreshToken,
-        userInfo: this.userInfo,
-        settings: this.settings
+      try {
+        if (!this.token || !this.userInfo?.account) {
+          return false
+        }
+
+        const storeData = {
+          token: this.token,
+          refreshToken: this.refreshToken,
+          userInfo: this.userInfo,
+          settings: this.settings
+        }
+        
+        localStorage.setItem('msdpt-user', JSON.stringify(storeData))
+        localStorage.setItem('access_token', this.token)
+        localStorage.setItem('refresh_token', this.refreshToken)
+        return true
+      } catch (error) {
+        console.error('Failed to persist state:', error)
+        return false
       }
-      localStorage.setItem('msdpt-user', JSON.stringify(storeData))
     },
 
     updateSettings(newSettings) {

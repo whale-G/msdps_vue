@@ -49,18 +49,9 @@ onMounted(() => {
       // 恢复token
       userStore.setTokens(token, refreshToken)
       
-      // 恢复用户信息（即使userInfo为空也会创建默认值）
-      if (userData) {
-        // 如果有用户信息，则使用存储的用户信息
-        if (userData.userInfo && userData.userInfo.account) {
-          userStore.setUserInfo(userData.userInfo)
-        } else {
-          // 如果没有有效的用户信息，清除状态并重定向到登录页
-          userStore.clearUserData()
-          processStore.clearAllState()
-          router.push('/login')
-          return
-        }
+      // 恢复用户信息
+      if (userData?.userInfo?.account) {
+        userStore.setUserInfo(userData.userInfo)
         
         // 恢复设置
         if (userData.settings) {
@@ -69,6 +60,11 @@ onMounted(() => {
         
         // 恢复处理状态
         processStore.restoreTaskState()
+      } else {
+        // 如果没有有效的用户信息，清除状态并重定向到登录页
+        userStore.clearUserData()
+        processStore.clearAllState()
+        router.push('/login')
       }
     } catch (error) {
       console.error('恢复用户状态失败:', error)
@@ -77,9 +73,14 @@ onMounted(() => {
       processStore.clearAllState()
       router.push('/login')
     }
-  } else if (!userStore.isLoggedIn && router.currentRoute.value.path !== '/login') {
-    // 如果没有token或用户未登录，重定向到登录页
-    router.push('/login')
+  } else if (router.currentRoute.value.path !== '/login') {
+    // 只有在以下情况才重定向到登录页：
+    // 1. 没有token
+    // 2. 当前不在登录页
+    // 3. 用户状态恢复失败
+    if (!token || !userStore.isLoggedIn) {
+      router.push('/login')
+    }
   }
 })
 </script>

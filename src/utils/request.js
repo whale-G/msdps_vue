@@ -15,7 +15,7 @@ NProgress.configure({
 // 创建axios实例
 const service = axios.create({
   baseURL: 'http://localhost:8000',
-  timeout: 120000  // 设置为2分钟
+  timeout: 600000  // 设置为10分钟
 })
 
 // 请求拦截器

@@ -26,6 +26,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useProcessStore } from '@/stores/process'
 import FileUpload from '@/components/FileUpload.vue'
 import LCRender from '@/components/renders/LCRender.vue'
 import { processShimazuLC, processAgilentLC } from '@/api/DocProcess'
@@ -33,6 +35,8 @@ import { useUserStore } from '@/stores/user'
 import { handleShimazuLCData, handleAgilentLCData } from '@/utils/data-process'
 
 const userStore = useUserStore()
+const route = useRoute()
+const processStore = useProcessStore()
 
 // 仪器类型选项
 const typeOptions = [
@@ -117,10 +121,14 @@ const handleProcessComplete = (result) => {
 
 // 返回处理
 const handleBack = () => {
+  // 清除组件内部状态
   showResult.value = false
   processResult.value = null
   selectedType.value = ''
   activeTab.value = 'file0'
+  
+  // 清除store中的状态
+  processStore.clearPageState(route.name)
 }
 </script>
 

@@ -30,6 +30,22 @@ export const useProcessStore = defineStore('process', {
       'lcms-process': '',
       'search-detail': ''
     },
+    // 新增：存储页面处理状态
+    pageProcessingStatus: {
+      'gc-process': false,
+      'gcms-process': false,
+      'lc-process': false,
+      'lcms-process': false,
+      'search-detail': false
+    },
+    // 新增：存储页面结果
+    pageResults: {
+      'gc-process': null,
+      'gcms-process': null,
+      'lc-process': null,
+      'lcms-process': null,
+      'search-detail': null
+    },
     // 任务队列
     tasks: {},
     // 存储处理请求
@@ -81,6 +97,8 @@ export const useProcessStore = defineStore('process', {
         abortController: new AbortController(), // 任务控制器
         createdAt: new Date().toISOString()
       }
+      // 新增：标记页面正在处理
+      this.pageProcessingStatus[type] = true
       this.persistState()
       return taskId
     },
@@ -118,6 +136,15 @@ export const useProcessStore = defineStore('process', {
         this.pageData[task.type] = result
         this.pageStatus[task.type] = true
         this.pageSelectedType[task.type] = selectedType
+        
+        // 新增：更新处理状态和结果
+        this.pageProcessingStatus[task.type] = false
+        this.pageResults[task.type] = {
+          result,
+          selectedType,
+          timestamp: new Date().getTime()
+        }
+        
         this.lastActivePage = task.type
 
         // 获取最新的用户设置
@@ -137,19 +164,34 @@ export const useProcessStore = defineStore('process', {
       const storedState = localStorage.getItem('msdpt-process')
       if (storedState) {
         try {
-          const { pageData, pageStatus, pageSelectedType, tasks, lastActivePage } = JSON.parse(storedState)
+          const { 
+            pageData, 
+            pageStatus, 
+            pageSelectedType,
+            pageProcessingStatus,
+            pageResults, 
+            tasks, 
+            lastActivePage 
+          } = JSON.parse(storedState)
+          
+          // 恢复所有状态
           if (pageData) this.pageData = pageData
           if (pageStatus) this.pageStatus = pageStatus
           if (pageSelectedType) this.pageSelectedType = pageSelectedType
+          if (pageProcessingStatus) this.pageProcessingStatus = pageProcessingStatus
+          if (pageResults) this.pageResults = pageResults
+          
+          // 恢复任务状态
           if (tasks) {
-            // 恢复任务时重新创建 AbortController
             Object.entries(tasks).forEach(([taskId, task]) => {
               if (task.status === 'processing' || task.status === 'pending') {
                 task.abortController = new AbortController()
+                this.pageProcessingStatus[task.type] = true
               }
             })
             this.tasks = tasks
           }
+          
           if (lastActivePage) this.lastActivePage = lastActivePage
         } catch (error) {
           console.error('恢复任务状态失败:', error)
@@ -163,6 +205,8 @@ export const useProcessStore = defineStore('process', {
         pageData: this.pageData,
         pageStatus: this.pageStatus,
         pageSelectedType: this.pageSelectedType,
+        pageProcessingStatus: this.pageProcessingStatus,
+        pageResults: this.pageResults,
         tasks: this.tasks,
         lastActivePage: this.lastActivePage
       }
@@ -195,6 +239,10 @@ export const useProcessStore = defineStore('process', {
         this.pageData[pageName] = null
         this.pageStatus[pageName] = false
         this.pageSelectedType[pageName] = ''
+        // 新增：清除处理状态和结果
+        this.pageProcessingStatus[pageName] = false
+        this.pageResults[pageName] = null
+        
         if (this.lastActivePage === pageName) {
           this.lastActivePage = null
         }

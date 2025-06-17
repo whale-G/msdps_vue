@@ -26,10 +26,15 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useProcessStore } from '@/stores/process'
 import FileUpload from '@/components/FileUpload.vue'
 import LCMSRender from '@/components/renders/LCMSRender.vue'
 import { processABLCMS, processAgilentLCMS } from '@/api/DocProcess'
 import { handleAbLCMSData, handleAgilentLCMSData } from '@/utils/data-process'
+
+const route = useRoute()
+const processStore = useProcessStore()
 
 const typeOptions = [
   {
@@ -110,10 +115,14 @@ const handleProcessComplete = (result) => {
 
 // 返回处理
 const handleBack = () => {
+  // 清除组件内部状态
   showResult.value = false
   processResult.value = null
   selectedType.value = ''
   activeTab.value = 'file0'
+  
+  // 清除store中的状态
+  processStore.clearPageState(route.name)
 }
 </script>
 

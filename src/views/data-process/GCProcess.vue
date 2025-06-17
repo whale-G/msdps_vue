@@ -25,6 +25,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useProcessStore } from '@/stores/process'
 import FileUpload from '@/components/FileUpload.vue'
 import GCRender from '@/components/renders/GCRender.vue'
 import { processGC } from '@/api/DocProcess'
@@ -36,6 +38,9 @@ const typeOptions = [
     value: 'agilent-7890'
   }
 ]
+
+const route = useRoute()
+const processStore = useProcessStore()
 
 // 组件状态
 const showResult = ref(false)
@@ -95,10 +100,14 @@ const handleProcessComplete = (result) => {
 
 // 返回处理
 const handleBack = () => {
+  // 清除组件内部状态
   showResult.value = false
   processResult.value = null
   selectedType.value = ''
   activeTab.value = 'file0'
+  
+  // 清除store中的状态
+  processStore.clearPageState(route.name)
 }
 </script>
 

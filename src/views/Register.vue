@@ -3,7 +3,7 @@
     <div class="register-content">
       <div class="register-header">
         <img src="@/assets/vue.svg" alt="Logo" class="logo">
-        <h1 class="system-name">MSDPT系统</h1>
+        <h1 class="system-name">小西数据员</h1>
       </div>
       <el-card class="register-card">
         <template #header>

@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { useProcessStore } from '@/stores/process'
@@ -117,16 +117,25 @@ const currentAcceptedTypes = computed(() => {
 
 // 监听任务状态变化
 watch(currentTask, (newTask, oldTask) => {
-  if (newTask?.status === 'completed' && newTask?.result) {
+  if (!newTask) {
+    // 如果任务被取消或完成，检查是否有保存的结果
+    const savedResult = processStore.pageResults[route.name]
+    if (savedResult) {
+      selectedType.value = savedResult.selectedType
+      const processedResult = props.handleResultData(savedResult.result, savedResult.selectedType)
+      emit('process-complete', processedResult)
+    }
+    return
+  }
+
+  if (newTask.status === 'completed' && newTask.result) {
     // 只有当当前页面与任务类型匹配时才更新显示
     if (route.name === newTask.type) {
       const processedResult = props.handleResultData(newTask.result, selectedType.value)
       emit('process-complete', processedResult)
     }
-    // 保存到对应任务类型的store中
-    processStore.setPageData(newTask.type, newTask.result)
     ElMessage.success('处理完成')
-  } else if (newTask?.status === 'error') {
+  } else if (newTask.status === 'error') {
     if (route.name === newTask.type) {
       ElMessage.error(newTask.error || '处理失败')
     }
@@ -221,18 +230,19 @@ const submitUpload = async () => {
 
   try {
     const files = fileList.value.map(file => file.raw || file)
+    const pageName = route.name
+    
     // 创建新任务
-    const taskId = processStore.createTask(route.name, files)
+    const taskId = processStore.createTask(pageName, files)
     
     // 调用处理函数
     const result = await props.processFunction(files, selectedType.value, taskId)
     
+    // 设置任务结果并更新页面状态
+    processStore.setTaskResult(taskId, result, selectedType.value)
+    
     // 发送处理完成事件
     const processedResult = props.handleResultData(result, selectedType.value)
-    // 设置任务结果并更新页面状态（todo:没有使用处理后的数据,如使用，需要修改process.js中downloadResults方法）
-    processStore.setTaskResult(taskId, result, selectedType.value)
-    processStore.setPageData(route.name, result, selectedType.value)
-
     emit('process-complete', processedResult)
     
     ElMessage.success('处理完成')
@@ -242,15 +252,39 @@ const submitUpload = async () => {
   }
 }
 
+// 组件挂载时检查状态
+onMounted(() => {
+  const pageName = route.name
+  // 检查是否有处理中的任务
+  if (processStore.pageProcessingStatus[pageName]) {
+    // 如果有处理中的任务，禁用上传
+    return
+  }
+  
+  // 检查是否有已保存的结果
+  const savedResult = processStore.pageResults[pageName]
+  if (savedResult) {
+    // 恢复选择的类型
+    selectedType.value = savedResult.selectedType
+    // 发送处理完成事件，恢复显示结果
+    const processedResult = props.handleResultData(savedResult.result, savedResult.selectedType)
+    emit('process-complete', processedResult)
+  }
+})
+
 // 组件卸载时清理状态
 onBeforeUnmount(() => {
+  const pageName = route.name
   if (!currentTask.value) {
-    // 只有在没有活动任务时才清除状态
-    const savedResult = processStore.getCurrentPageData(route.name)
+    // 只有在没有活动任务时才考虑清除状态
+    const savedResult = processStore.pageResults[pageName]
     if (!savedResult) {
-      processStore.clearPageState(route.name)
+      // 只有在没有保存的结果时才清除状态
+      processStore.clearPageState(pageName)
     }
   }
+  // 保存当前状态
+  processStore.persistState()
 })
 </script>
 

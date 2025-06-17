@@ -13,8 +13,8 @@ export const useUserStore = defineStore('user', {
     settings: {
       floatParameter: 0.05,
       fileNameFormat: 'type_date',
-      autoDownload: false,
-      mergeFiles: true,
+      autoDownload: false,  // 是否自动下载
+      mergeFiles: true,     // 是否合并文件
       loginTime: ''
     }
   }),

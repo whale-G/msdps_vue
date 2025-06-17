@@ -73,12 +73,12 @@ export const useProcessStore = defineStore('process', {
       const taskId = `${type}_${Date.now()}`
       this.tasks[taskId] = {
         id: taskId,
-        type,
-        status: 'pending',
-        progress: 0,
-        result: null,
-        files,
-        abortController: new AbortController(),
+        type,                 // 任务类型(gc-process等)
+        status: 'pending',    // 任务状态(pending, processing, completed, cancelled)
+        progress: 0,          // 任务进度(0-100)
+        result: null,         // 任务结果
+        files,                // 任务文件（上传的文件）
+        abortController: new AbortController(), // 任务控制器
         createdAt: new Date().toISOString()
       }
       this.persistState()
@@ -104,16 +104,20 @@ export const useProcessStore = defineStore('process', {
     },
 
     // 设置任务结果
-    setTaskResult(taskId, result) {
+    setTaskResult(taskId, result, selectedType) {
       const task = this.tasks[taskId]
       if (task) {
+        // 更新任务结果
         task.result = result
+        // 更新任务状态
         task.status = 'completed'
+        // 更新任务进度
         task.progress = 100
         
         // 更新对应页面的数据
         this.pageData[task.type] = result
         this.pageStatus[task.type] = true
+        this.pageSelectedType[task.type] = selectedType
         this.lastActivePage = task.type
 
         // 获取最新的用户设置
@@ -133,9 +137,10 @@ export const useProcessStore = defineStore('process', {
       const storedState = localStorage.getItem('msdpt-process')
       if (storedState) {
         try {
-          const { pageData, pageStatus, tasks, lastActivePage } = JSON.parse(storedState)
+          const { pageData, pageStatus, pageSelectedType, tasks, lastActivePage } = JSON.parse(storedState)
           if (pageData) this.pageData = pageData
           if (pageStatus) this.pageStatus = pageStatus
+          if (pageSelectedType) this.pageSelectedType = pageSelectedType
           if (tasks) {
             // 恢复任务时重新创建 AbortController
             Object.entries(tasks).forEach(([taskId, task]) => {
@@ -157,6 +162,7 @@ export const useProcessStore = defineStore('process', {
       const state = {
         pageData: this.pageData,
         pageStatus: this.pageStatus,
+        pageSelectedType: this.pageSelectedType,
         tasks: this.tasks,
         lastActivePage: this.lastActivePage
       }

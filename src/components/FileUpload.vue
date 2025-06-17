@@ -230,7 +230,7 @@ const submitUpload = async () => {
     // 发送处理完成事件
     const processedResult = props.handleResultData(result, selectedType.value)
     // 设置任务结果并更新页面状态（todo:没有使用处理后的数据,如使用，需要修改process.js中downloadResults方法）
-    processStore.setTaskResult(taskId, result)
+    processStore.setTaskResult(taskId, result, selectedType.value)
     processStore.setPageData(route.name, result, selectedType.value)
 
     emit('process-complete', processedResult)

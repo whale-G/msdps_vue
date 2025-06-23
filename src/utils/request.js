@@ -71,13 +71,13 @@ service.interceptors.response.use(
     }
     
     // 处理其他接口的响应
-    if (res.status === 'success' || res.status === 'completed') {
+    if (res.status === 'processing' || res.status === 'success' || res.status === 'completed') {
       return res
     }
 
     // 如果是文件处理相关的错误，直接返回错误信息
     if (response.config.url.includes('/process/')) {
-      return Promise.reject(new Error(res.message || '文件处理失败'))
+      return Promise.reject(new Error(res.message || '文件处理失败，请重试'))
     }
 
     ElMessage.error(res.message || '请求失败')

@@ -100,16 +100,6 @@
                 <span>用户管理</span>
               </el-menu-item>
             </el-tooltip>
-            <el-tooltip
-              content="权限管理"
-              placement="right"
-              :disabled="!isCollapse"
-            >
-              <el-menu-item index="/system/permission">
-                <el-icon><Lock /></el-icon>
-                <span>权限管理</span>
-              </el-menu-item>
-            </el-tooltip>
           </el-sub-menu>
         <div class="menu-spacer"></div>
 
@@ -297,13 +287,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, provide, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   User, Lock, HomeFilled, Setting, UserFilled,
-  Key, SwitchButton, Expand, Fold, Plus,
-  Document, Bell, Refresh, Monitor, Timer, ArrowDown, Moon, Sunny, Tools, Minus, QuestionFilled
+  Key, SwitchButton, Expand, Fold,
+  Document, ArrowDown, Moon, Sunny, Tools, Minus, QuestionFilled
 } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user'
 import { useProcessStore } from '../stores/process'

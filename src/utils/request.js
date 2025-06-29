@@ -14,7 +14,8 @@ NProgress.configure({
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: 'http://localhost:8000',
+  // 从环境变量获取baseURL，如果未设置则使用相对路径
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 600000  // 设置为10分钟
 })
 

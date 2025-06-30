@@ -15,9 +15,11 @@ NProgress.configure({
 // 创建axios实例
 const service = axios.create({
   // 从环境变量获取baseURL，如果未设置则使用相对路径
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 600000  // 设置为10分钟
 })
+
+console.log('API Base URL:',import.meta.env.VITE_API_BASE_URL)
 
 // 请求拦截器
 service.interceptors.request.use(

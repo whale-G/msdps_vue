@@ -19,3 +19,12 @@ export function getSearchDataDetail(process_id, process_type) {
     }
   })
 }
+
+// 获取数据处理统计，供首页渲染
+export function getDataProcessStatistics() {
+  return request({
+    url: '/search/data-process-statistics/',
+    method: 'get'
+  })
+}
+

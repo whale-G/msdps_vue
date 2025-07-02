@@ -247,22 +247,23 @@ onMounted(() => {
 .settings-container {
   height: 100%;
   width: 100%;
-  padding: 16px;
-  padding-bottom: calc(16px + 72px); /* 为固定按钮留出空间 */
+  padding: 24px;
+  padding-bottom: calc(24px + 72px);
   box-sizing: border-box;
   overflow-y: auto;
   background-color: var(--el-bg-color-page);
   position: relative;
   
   .settings-card {
-    max-width: 800px;
+    max-width: 1200px;
+    width: 100%;
     margin: 0 auto;
     box-shadow: var(--el-box-shadow-light);
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid var(--el-border-color-light);
     
     :deep(.el-card__body) {
-      padding: 24px;
+      padding: 32px;
     }
   }
 }
@@ -272,7 +273,6 @@ onMounted(() => {
   align-items: center;
   margin: -12px -16px 16px;
   padding: 16px;
-  border-bottom: 1px solid var(--el-border-color-light);
   background-color: var(--el-bg-color);
   border-radius: 8px 8px 0 0;
   
@@ -331,8 +331,8 @@ onMounted(() => {
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 32px;
   margin-top: 24px;
   
   .info-item {
@@ -438,7 +438,7 @@ onMounted(() => {
 
 :deep(.el-select) {
   width: 100%;
-  max-width: 400px;
+  max-width: 600px;
 }
 
 :deep(.el-switch) {
@@ -472,8 +472,8 @@ onMounted(() => {
 /* 响应式布局适配 */
 @media screen and (max-width: 768px) {
   .settings-container {
-    padding: 12px;
-    padding-bottom: calc(12px + 72px);
+    padding: 16px;
+    padding-bottom: calc(16px + 72px);
   }
   
   .form-actions {
@@ -486,12 +486,12 @@ onMounted(() => {
   }
   
   .section-container {
-    padding: 16px;
+    padding: 20px;
   }
   
   .info-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 20px;
   }
 }
 

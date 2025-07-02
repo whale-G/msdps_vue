@@ -197,7 +197,6 @@ watch(() => props.modelValue, () => {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--el-border-color-light);
   background-color: var(--el-bg-color);
   
   .back-button {

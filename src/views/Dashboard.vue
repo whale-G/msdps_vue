@@ -755,29 +755,49 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
 .header-right {
   display: flex;
   align-items: center;
+  gap: 16px;  /* 增加间距 */
 }
 
 .user-info {
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
   transition: all 0.3s;
-}
-
-.user-info:hover {
-  background-color: #f6f8fa;
-}
-
-.user-avatar {
-  background-color: #409EFF;
-}
-
-.username {
-  margin: 0 8px;
-  font-size: 14px;
-  color: #2c3e50;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-lighter);
+  
+  &:hover {
+    background: var(--el-fill-color-light);
+    border-color: var(--el-border-color);
+    transform: translateY(-1px);
+  }
+  
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;  /* 方形圆角头像 */
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+  }
+  
+  .username {
+    margin: 0 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-primary);
+  }
+  
+  .el-icon {
+    font-size: 14px;
+    color: var(--el-text-color-secondary);
+    transition: transform 0.3s;
+  }
+  
+  &:hover .el-icon {
+    transform: rotate(180deg);
+  }
 }
 
 .dashboard-card {
@@ -1188,6 +1208,169 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
     margin: 4px;
     padding: 0 !important;
     justify-content: center;
+  }
+}
+
+/* 下拉菜单样式优化 */
+.el-popper.is-pure {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 16px !important;
+  border: 1px solid var(--el-border-color-light) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(12px);
+  
+  .el-dropdown-menu {
+    background: transparent;
+    border: none;
+    padding: 8px;
+    min-width: 160px;
+    
+    .el-dropdown-menu__item {
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin: 4px 0;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      color: var(--el-text-color-primary);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      
+      .el-icon {
+        font-size: 18px;
+        margin-right: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      /* 修改密码选项 */
+      &:first-child {
+        color: var(--el-color-primary);
+        
+        .el-icon {
+          color: var(--el-color-primary);
+        }
+        
+        &:hover {
+          background-color: var(--el-color-primary-light-9);
+          transform: translateX(4px);
+          
+          .el-icon {
+            transform: scale(1.1) rotate(15deg);
+          }
+        }
+      }
+      
+      /* 退出登录选项 */
+      &:last-child {
+        margin-top: 4px;
+        color: var(--el-color-danger);
+        
+        .el-icon {
+          color: var(--el-color-danger);
+        }
+        
+        &:hover {
+          background-color: var(--el-color-danger-light-9);
+          transform: translateX(4px);
+          
+          .el-icon {
+            transform: scale(1.1) rotate(-15deg);
+          }
+        }
+      }
+    }
+    
+    /* 分割线样式 */
+    .el-dropdown-menu__item.el-dropdown-menu__item--divided {
+      position: relative;
+      margin-top: 8px;
+      border-top: none;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: -6px;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--el-border-color-lighter) 15%,
+          var(--el-border-color-lighter) 85%,
+          transparent
+        );
+      }
+    }
+  }
+}
+
+/* 深色模式适配 */
+:deep(.dark) {
+  .el-popper.is-pure {
+    background-color: rgba(30, 30, 30, 0.95) !important;
+    border-color: var(--el-border-color-darker) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3) !important;
+    
+    .el-dropdown-menu {
+      .el-dropdown-menu__item {
+        /* 深色模式下的修改密码选项 */
+        &:first-child {
+          color: var(--el-color-primary-light-3);
+          
+          .el-icon {
+            color: var(--el-color-primary-light-3);
+          }
+          
+          &:hover {
+            background-color: rgba(64, 158, 255, 0.15);
+          }
+        }
+        
+        /* 深色模式下的退出登录选项 */
+        &:last-child {
+          color: var(--el-color-danger-light-3);
+          
+          .el-icon {
+            color: var(--el-color-danger-light-3);
+          }
+          
+          &:hover {
+            background-color: rgba(245, 108, 108, 0.15);
+          }
+        }
+      }
+      
+      .el-dropdown-menu__item--divided {
+        &::before {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            var(--el-border-color-darker) 15%,
+            var(--el-border-color-darker) 85%,
+            transparent
+          );
+        }
+      }
+    }
+  }
+}
+
+/* 下拉菜单动画 */
+.el-popper.is-pure {
+  transform-origin: top right;
+  animation: dropdown-in 0.2s ease-out;
+  
+  @keyframes dropdown-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 }
 </style> 

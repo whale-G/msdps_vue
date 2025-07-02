@@ -455,15 +455,24 @@ onUnmounted(() => {
 
 <style scoped>
 .user-management {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
+  height: 100%;
+  width: 100%;
+  padding: 24px;
   box-sizing: border-box;
+  background-color: var(--el-bg-color-page);
+  position: relative;
 }
 
 .table-card {
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  background-color: var(--el-bg-color);
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  box-shadow: var(--el-box-shadow-light);
+  height: auto;
+  
+  :deep(.el-card__body) {
+    padding: 0;
+  }
 }
 
 .card-header {
@@ -471,31 +480,35 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 15px;
-  padding: 15px 20px;
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--el-border-color-light);
+  background-color: var(--el-bg-color);
+  border-radius: 12px 12px 0 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 20px;
 }
 
 .title {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 20px;  /* 增大标题字号 */
+  font-weight: 600;
   white-space: nowrap;
+  color: var(--el-text-color-primary);
 }
 
 .filter-container {
   display: flex;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
 .filter-select {
-  width: 120px;
+  width: 160px;  /* 增加选择器宽度 */
 }
 
 .filter-select-mobile {
@@ -506,19 +519,32 @@ onUnmounted(() => {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  padding: 20px 24px 0;  /* 调整内边距 */
+}
+
+:deep(.el-table) {
+  border-radius: 8px;
+  
+  th.el-table__cell {
+    background-color: var(--el-bg-color-page);
+    font-weight: 600;
+  }
 }
 
 .operation-buttons {
   display: flex;
-  gap: 8px;
+  gap: 12px;  /* 增加按钮间距 */
   justify-content: flex-start;
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin: 0;  /* 移除外边距 */
+  padding: 20px 24px;  /* 调整内边距 */
   display: flex;
-  justify-content: center;
-  padding: 10px 0;
+  justify-content: flex-end;  /* 改为右对齐 */
+  background-color: var(--el-bg-color);
+  border-radius: 0 0 12px 12px;
+  border-top: 1px solid var(--el-border-color-light);  /* 添加上边框 */
 }
 
 :deep(.el-dialog) {
@@ -534,56 +560,52 @@ onUnmounted(() => {
   width: 100%;
 }
 
-/* 响应式样式 */
+/* 响应式样式优化 */
 @media screen and (max-width: 768px) {
   .user-management {
-    padding: 10px;
+    margin: 0 16px;  /* 减小边距 */
+    padding: 16px 0;
   }
 
-  .card-header {
-    padding: 10px;
+  .table-responsive {
+    padding: 16px 16px 0;
   }
 
-  .header-left {
-    width: 100%;
-  }
-
-  .operation-buttons {
-    flex-direction: row;
-    justify-content: space-around;
-  }
-
-  .filter-container {
-    width: 100%;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  :deep(.el-dialog) {
-    width: 95% !important;
+  .pagination-container {
+    padding: 16px;
+    justify-content: center;  /* 在移动端居中显示分页 */
   }
 }
 
 @media screen and (max-width: 576px) {
-  .card-header {
-    flex-direction: column;
-    align-items: stretch;
+  .user-management {
+    margin: 0 12px;
+    padding: 12px 0;
   }
 
-  .header-left {
-    flex-direction: column;
-    align-items: stretch;
+  .table-responsive {
+    padding: 12px 12px 0;
   }
 
-  .title {
-    text-align: center;
+  .pagination-container {
+    padding: 12px;
   }
 }
 
 /* 暗黑模式适配 */
-@media (prefers-color-scheme: dark) {
+:deep(.dark) {
   .table-card {
-    background-color: var(--el-bg-color);
+    background-color: var(--el-bg-color-overlay);
+    border-color: var(--el-border-color-darker);
+  }
+
+  .card-header {
+    background-color: var(--el-bg-color-overlay);
+    border-color: var(--el-border-color-darker);
+  }
+
+  .pagination-container {
+    border-color: var(--el-border-color-darker);
   }
 }
 </style> 

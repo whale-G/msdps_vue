@@ -2,8 +2,13 @@
   <div class="login-container">
     <div class="login-content">
       <div class="login-header">
-        <img src="@/assets/vue.svg" alt="Logo" class="logo">
-        <h1 class="system-name">小西数据员</h1>
+        <div class="logo-container">
+          <img src="@/assets/logo-bg.svg" alt="Logo" class="logo">
+        </div>
+        <div class="header-text">
+          <h1 class="header-title">小西数据员</h1>
+          <h2 class="header-subtitle">Improve your research efficiency</h2>
+        </div>
       </div>
       <el-card class="login-card">
         <template #header>
@@ -120,34 +125,63 @@ const handleLogin = async () => {
 
 .login-content {
   width: 100%;
-  max-width: 420px;
-  padding: 20px;
+  max-width: 520px;
+  padding: 25px;
   margin: 20px auto;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(15px);
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .login-header {
-  text-align: center;
+  text-align: left;
   margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 10px;
+}
+
+.logo-container {
+  width: 160px;
+  height: 100px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 1rem;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(2); /* 放大logo本身 */
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
 }
 
-.system-name {
-  color: #2c3e50;
-  font-size: 28px;
-  margin: 0;
-  font-weight: 600;
-  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.5);
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.header-title {
+  font-size: 24px;
+  color: #163656;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.header-subtitle {
+  font-size: 18px;
+  color: #0c4480;
+  font-weight: normal;
+  white-space: nowrap;
 }
 
 .login-card {
@@ -251,13 +285,23 @@ const handleLogin = async () => {
     margin: 10px;
   }
 
-  .system-name {
-    font-size: 24px;
+  .login-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 0;
   }
 
-  .logo {
-    width: 48px;
-    height: 48px;
+  .logo-container {
+    width: 140px;
+    height: 87px;
+  }
+
+  .header-text {
+    align-items: center;
+  }
+
+  .header-subtitle {
+    font-size: 16px;
   }
 
   .login-card :deep(.el-card__body) {
@@ -271,13 +315,9 @@ const handleLogin = async () => {
     padding: 10px;
   }
 
-  .system-name {
-    font-size: 20px;
-  }
-
   .logo {
-    width: 40px;
-    height: 40px;
+    width: 160px;
+    height: 100px;
   }
 
   .login-card :deep(.el-card__body) {

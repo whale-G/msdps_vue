@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside :width="isCollapse ? '64px' : '220px'" class="aside" :class="{ 'is-collapse': isCollapse }">
       <div class="logo-container">
-        <img src="@/assets/vue.svg" alt="Logo" class="logo">
+        <img src="@/assets/logo-bg.svg" alt="Logo" class="logo">
         <h1 class="title" v-show="!isCollapse">小西数据员</h1>
       </div>
       <el-menu
@@ -615,8 +615,8 @@ const isForceChangePassword = computed(() => userStore.needsPasswordChange)
       border-bottom: 1px solid var(--el-border-color-light);
       
       .logo {
-        height: 32px;
-        width: 32px;
+        height: 45px;
+        width: 45px;
       }
       
       .title {

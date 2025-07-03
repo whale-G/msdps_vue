@@ -102,7 +102,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // 设置页面标题
   if (to.meta.title) {
-    document.title = `${to.meta.title} - MSDPT系统`
+    document.title = `${to.meta.title} - 小西数据员`
   }
   
   const token = localStorage.getItem('access_token')

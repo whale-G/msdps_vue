@@ -89,6 +89,7 @@
           content="用户管理"
           placement="right"
           :disabled="!isCollapse"
+          v-if="userStore.isAdmin"
         >
           <el-menu-item index="/system/user">
             <el-icon><User /></el-icon>

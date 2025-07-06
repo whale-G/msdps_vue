@@ -49,8 +49,8 @@ let mouseLeaveTimer = null
 
 // 位置状态
 const position = ref({
-  x: localStorage.getItem('floatingBallX') || 40,
-  y: localStorage.getItem('floatingBallY') || 40
+  x: parseInt(localStorage.getItem('floatingBallX')) || window.innerWidth - 120,
+  y: parseInt(localStorage.getItem('floatingBallY')) || window.innerHeight - 120
 })
 
 // 拖拽状态
@@ -58,22 +58,36 @@ const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
 
 // 容器样式
-const containerStyle = computed(() => ({
-  left: `${position.value.x}px`,
-  top: `${position.value.y}px`,
-  right: 'auto',
-  bottom: 'auto'
-}))
+const containerStyle = computed(() => {
+  // 确保位置不超出视窗
+  const maxX = window.innerWidth - 100
+  const maxY = window.innerHeight - 100
+  
+  return {
+    left: `${Math.min(Math.max(0, position.value.x), maxX)}px`,
+    top: `${Math.min(Math.max(0, position.value.y), maxY)}px`,
+    right: 'auto',
+    bottom: 'auto'
+  }
+})
 
 // 添加窗口大小变化监听
 const adjustPosition = () => {
-  const maxX = window.innerWidth - ballContainer.value?.offsetWidth || 100
-  const maxY = window.innerHeight - ballContainer.value?.offsetHeight || 100
+  const maxX = window.innerWidth - (ballContainer.value?.offsetWidth || 100)
+  const maxY = window.innerHeight - (ballContainer.value?.offsetHeight || 100)
   
-  // 确保位置不超出视窗
-  position.value = {
-    x: Math.min(Math.max(0, position.value.x), maxX),
-    y: Math.min(Math.max(0, position.value.y), maxY)
+  // 如果没有保存过位置，则放置在右下角
+  if (!localStorage.getItem('floatingBallX') || !localStorage.getItem('floatingBallY')) {
+    position.value = {
+      x: maxX - 20,  // 距离右边20px
+      y: maxY - 20   // 距离底部20px
+    }
+  } else {
+    // 确保位置不超出视窗
+    position.value = {
+      x: Math.min(Math.max(0, position.value.x), maxX),
+      y: Math.min(Math.max(0, position.value.y), maxY)
+    }
   }
   
   // 保存调整后的位置
@@ -179,7 +193,7 @@ const props = defineProps({
 
 // 判断是否在数据处理页面
 const isDataProcessPage = computed(() => {
-  console.log(route.name)
+  // console.log(route.name)
   return ['gc-process', 'gcms-process', 'lc-process', 'lcms-process', 'search-detail'].includes(route.name)
 })
 

@@ -13,7 +13,16 @@ export function login(data) {
       password: data.password
     }
   }).then(response => {
-    // 如果登录成功，返回响应数据
+    // 如果登录成功，确保返回所有必要的用户信息
+    if (response.status === 'success') {
+      return {
+        ...response,
+        is_superuser: response.is_superuser || false,  // 确保有is_superuser字段
+        access: response.access,
+        refresh: response.refresh,
+        force_password_change: response.force_password_change || false
+      }
+    }
     return response;
   }).catch(error => {
     // 处理特定的错误情况
@@ -56,7 +65,7 @@ export function changePassword(data) {
   })
 }
 
-// 获取用户列表
+// 管理员获取用户列表
 export function getUserList(params) {
   return request({
     url: '/user_management/admin/users/',
@@ -65,7 +74,7 @@ export function getUserList(params) {
   })
 }
 
-// 创建用户
+// 管理员创建用户
 export function createUser(data) {
   return request({
     url: '/user_management/admin/users/create/',
@@ -74,7 +83,7 @@ export function createUser(data) {
   })
 }
 
-// 更新用户信息
+// 管理员更新用户信息
 export function updateUser(uuid, data) {
   return request({
     url: `/user_management/admin/users/${uuid}/update/`,
@@ -83,7 +92,7 @@ export function updateUser(uuid, data) {
   })
 }
 
-// 删除用户
+// 管理员删除用户
 export function deleteUser(uuid) {
   return request({
     url: `/user_management/admin/users/${uuid}/delete/`,

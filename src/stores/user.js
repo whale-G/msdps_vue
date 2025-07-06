@@ -28,9 +28,9 @@ export const useUserStore = defineStore('user', {
     getSettings: (state) => state.settings,
     // 获取用户头像
     getUserAvatar: (state) => state.userInfo?.avatar,
-    isAdmin: (state) => state.userInfo?.isAdmin || false,
+    isAdmin: (state) => state.userInfo?.is_superuser || false,
     // 只有管理员账户且force_password_change为true时才需要强制修改密码
-    needsPasswordChange: (state) => state.userInfo?.isAdmin && state.forcePasswordChange
+    needsPasswordChange: (state) => state.userInfo?.is_superuser && state.forcePasswordChange
   },
 
   actions: {
@@ -104,7 +104,7 @@ export const useUserStore = defineStore('user', {
       const processedUserInfo = {
         username: userInfo.username || userInfo.account,
         account: userInfo.account,
-        isAdmin: userInfo.isAdmin || userInfo.account === 'admin' || false,
+        is_superuser: userInfo.is_superuser || false,  // 使用is_superuser判断管理员权限
         avatar: userInfo.avatar || getRandomAvatar()
       }
 
@@ -178,17 +178,17 @@ export const useUserStore = defineStore('user', {
         if (result.status === 'success' && result.access && result.refresh) {
           this.setTokens(result.access, result.refresh)
           
-          // 创建完整的用户信息对象
+          // 创建完整的用户信息对象，使用后端返回的is_superuser
           const userInfo = {
             username: userAccount,
             account: userAccount,
-            isAdmin: userAccount === 'admin',
+            is_superuser: result.is_superuser || false,  // 使用后端返回的is_superuser
             avatar: getRandomAvatar() // 确保新用户有头像
           }
           this.setUserInfo(userInfo)
           
           // 只有管理员账户才设置强制修改密码状态
-          if (userAccount === 'admin') {
+          if (userInfo.is_superuser) {
             this.forcePasswordChange = result.force_password_change || false
           } else {
             this.forcePasswordChange = false

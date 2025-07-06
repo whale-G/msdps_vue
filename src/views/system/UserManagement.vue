@@ -64,8 +64,8 @@
             :width="isMobileView ? 90 : 120"
           >
             <template #default="{ row }">
-              <el-tag :type="row.is_staff ? 'danger' : 'info'" :size="isMobileView ? 'small' : 'default'">
-                {{ row.is_staff ? '管理员' : '普通用户' }}
+              <el-tag :type="row.is_superuser ? 'danger' : 'info'" :size="isMobileView ? 'small' : 'default'">
+                {{ row.is_superuser ? '管理员' : '普通用户' }}
               </el-tag>
             </template>
           </el-table-column>
@@ -167,11 +167,17 @@
             placeholder="请输入密码"
           />
         </el-form-item>
-        <el-form-item label="用户类型" prop="is_staff">
-          <el-radio-group v-model="userForm.is_staff">
+        <el-form-item label="用户类型" prop="is_superuser">
+          <el-radio-group 
+            v-model="userForm.is_superuser"
+            :disabled="dialogType === 'edit' && isCurrentUserAdmin"
+          >
             <el-radio :value="false">普通用户</el-radio>
             <el-radio :value="true">管理员</el-radio>
           </el-radio-group>
+          <div v-if="dialogType === 'edit' && isCurrentUserAdmin" class="admin-tip">
+            <el-tag type="warning">管理员账户权限不可修改</el-tag>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -189,10 +195,14 @@ import { ref, reactive, onMounted, computed, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUserList, createUser, updateUser, deleteUser } from '@/api/user'
 import { Plus } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
 
 // 用户列表
 const userList = ref([])
 const loading = ref(false)
+const userStore = useUserStore()
+const router = useRouter()
 
 // 筛选条件
 const filterForm = reactive({
@@ -208,9 +218,9 @@ const filteredUserList = computed(() => {
   if (filterForm.userType) {
     result = result.filter(user => {
       if (filterForm.userType === 'admin') {
-        return user.is_staff
+        return user.is_superuser
       } else {
-        return !user.is_staff
+        return !user.is_superuser
       }
     })
   }
@@ -250,7 +260,7 @@ const userFormRef = ref(null)
 const userForm = reactive({
   user_account: '',
   password: '',
-  is_staff: false,
+  is_superuser: false,
   accountType: 'email'  // 默认选择邮箱类型
 })
 
@@ -277,19 +287,56 @@ const validateAccount = (rule, value, callback) => {
   }
 }
 
-// 表单验证规则
-const userRules = {
-  user_account: [
-    { required: true, validator: validateAccount, trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
-  ],
-  accountType: [
-    { required: true, message: '请选择账号类型', trigger: 'change' }
-  ]
+const validatePassword = (rule, value, callback) => {
+  if (!value && dialogType.value === 'add') {
+    callback(new Error('请输入密码'))
+    return
+  }
+  
+  if (value) {
+    if (value.length < 8) {
+      callback(new Error('密码长度不能小于8位'))
+      return
+    }
+    
+    const hasUpperCase = /[A-Z]/.test(value)
+    const hasLowerCase = /[a-z]/.test(value)
+    const hasNumber = /[0-9]/.test(value)
+    
+    if (!hasUpperCase) {
+      callback(new Error('密码必须包含大写字母'))
+      return
+    }
+    if (!hasLowerCase) {
+      callback(new Error('密码必须包含小写字母'))
+      return
+    }
+    if (!hasNumber) {
+      callback(new Error('密码必须包含数字'))
+      return
+    }
+  }
+  callback()
 }
+
+// 根据对话框类型返回不同的验证规则
+const userRules = computed(() => {
+  const baseRules = {
+    user_account: [
+      { required: true, validator: validateAccount, trigger: 'blur' }
+    ],
+    accountType: [
+      { required: true, message: '请选择账号类型', trigger: 'change' }
+    ]
+  }
+
+  // 新增和编辑时的密码验证
+  baseRules.password = [
+    { validator: validatePassword, trigger: 'blur' }
+  ]
+
+  return baseRules
+})
 
 // 账号类型变更处理
 const handleAccountTypeChange = () => {
@@ -340,7 +387,7 @@ const handleAdd = () => {
   dialogVisible.value = true
   userForm.user_account = ''
   userForm.password = ''
-  userForm.is_staff = false
+  userForm.is_superuser = false
   userForm.accountType = 'email'
   if (userFormRef.value) {
     userFormRef.value.resetFields()
@@ -357,7 +404,7 @@ const handleEdit = (row) => {
     uuid: row.uuid,
     user_account: row.user_account,
     password: '',  // 编辑时密码置空
-    is_staff: row.is_staff,
+    is_superuser: row.is_superuser,
     accountType: isEmail ? 'email' : 'phone'
   })
 }
@@ -374,20 +421,43 @@ const handleSubmit = async () => {
         await createUser({
           user_account: userForm.user_account,
           password: userForm.password,
-          is_staff: userForm.is_staff
+          is_superuser: userForm.is_superuser
         })
         ElMessage.success('新增用户成功')
       } else {
         const updateData = {
           user_account: userForm.user_account,
-          is_staff: userForm.is_staff
+          is_superuser: userForm.is_superuser
         }
         // 只有当密码不为空时才更新密码
         if (userForm.password?.trim()) {
           updateData.password = userForm.password
         }
+
+        // 记录是否修改了用户权限
+        const isChangingSuperUser = userForm.uuid === userStore.userInfo?.uuid && 
+                                  userForm.is_superuser !== userStore.userInfo?.is_superuser
+
         await updateUser(userForm.uuid, updateData)
-        ElMessage.success('编辑用户成功')
+        
+        // 如果修改的是当前登录用户的权限，提示需要重新登录
+        if (isChangingSuperUser) {
+          ElMessageBox.alert(
+            '您的账户权限已更改，需要重新登录才能生效',
+            '提示',
+            {
+              confirmButtonText: '确定',
+              type: 'warning',
+              callback: () => {
+                userStore.logout().then(() => {
+                  router.push('/login')
+                })
+              }
+            }
+          )
+        } else {
+          ElMessage.success('编辑用户成功')
+        }
       }
       dialogVisible.value = false
       await fetchUserList() // 重新加载用户列表
@@ -402,8 +472,14 @@ const handleSubmit = async () => {
 
 // 处理删除
 const handleDelete = (row) => {
+  // 如果是当前登录用户，不允许删除
+  if (row.uuid === userStore.userInfo?.uuid) {
+    ElMessage.warning('不能删除当前登录的账户')
+    return
+  }
+
   ElMessageBox.confirm(
-    `确认删除用户"${row.user_account}"吗？此操作不可恢复`,
+    `确认删除用户"${row.user_account}"吗？${row.is_superuser ? '该用户是管理员，删除后请确保系统中还有其他管理员账户。' : ''}此操作不可恢复`,
     '删除确认',
     {
       confirmButtonText: '确定删除',
@@ -420,7 +496,11 @@ const handleDelete = (row) => {
       await fetchUserList() // 重新加载用户列表
     } catch (error) {
       console.error('删除用户失败:', error)
-      ElMessage.error(error.response?.data?.message || '删除用户失败')
+      if (error.response?.data?.message) {
+        ElMessage.error(error.response.data.message)
+      } else {
+        ElMessage.error('删除用户失败')
+      }
     } finally {
       loading.value = false
     }
@@ -438,18 +518,17 @@ const dialogWidth = computed(() => {
   return '500px'
 })
 
-// 监听窗口大小变化
-const handleResize = () => {
-  screenWidth.value = window.innerWidth
-}
-
-onMounted(() => {
-  window.addEventListener('resize', handleResize)
-  fetchUserList()
+// 判断当前编辑的用户是否为管理员
+const isCurrentUserAdmin = computed(() => {
+  if (dialogType.value === 'edit' && userForm.uuid) {
+    const currentUser = userList.value.find(user => user.uuid === userForm.uuid)
+    return currentUser?.is_superuser
+  }
+  return false
 })
 
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
+onMounted(() => {
+  fetchUserList()
 })
 </script>
 
@@ -459,16 +538,24 @@ onUnmounted(() => {
   width: 100%;
   padding: 24px;
   box-sizing: border-box;
+  overflow-y: auto;
   background-color: var(--el-bg-color-page);
   position: relative;
 }
 
 .table-card {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
   background-color: var(--el-bg-color);
   border-radius: 12px;
   border: 1px solid var(--el-border-color-light);
   box-shadow: var(--el-box-shadow-light);
-  height: auto;
+  
+  :deep(.el-card__header) {
+    padding: 0;
+    border-bottom: 1px solid var(--el-border-color-light);
+  }
   
   :deep(.el-card__body) {
     padding: 0;
@@ -476,136 +563,155 @@ onUnmounted(() => {
 }
 
 .card-header {
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--el-border-color-light);
   background-color: var(--el-bg-color);
-  border-radius: 12px 12px 0 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 20px;
-}
-
-.title {
-  font-size: 20px;  /* 增大标题字号 */
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--el-text-color-primary);
-}
-
-.filter-container {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.filter-select {
-  width: 160px;  /* 增加选择器宽度 */
-}
-
-.filter-select-mobile {
-  width: 100%;
+  
+  .title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+  
+  .filter-container {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    
+    .filter-select {
+      width: 160px;
+      
+      &.filter-select-mobile {
+        width: 100%;
+      }
+    }
+  }
 }
 
 .table-responsive {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 20px 24px 0;  /* 调整内边距 */
-}
-
-:deep(.el-table) {
-  border-radius: 8px;
+  padding: 20px;
   
-  th.el-table__cell {
-    background-color: var(--el-bg-color-page);
-    font-weight: 600;
+  :deep(.el-table) {
+    border-radius: 8px;
+    
+    th.el-table__cell {
+      background-color: var(--el-bg-color-page);
+      font-weight: 600;
+    }
   }
 }
 
 .operation-buttons {
   display: flex;
-  gap: 12px;  /* 增加按钮间距 */
+  gap: 12px;
   justify-content: flex-start;
 }
 
 .pagination-container {
-  margin: 0;  /* 移除外边距 */
-  padding: 20px 24px;  /* 调整内边距 */
-  display: flex;
-  justify-content: flex-end;  /* 改为右对齐 */
+  padding: 16px 20px;
   background-color: var(--el-bg-color);
-  border-radius: 0 0 12px 12px;
-  border-top: 1px solid var(--el-border-color-light);  /* 添加上边框 */
+  border-top: 1px solid var(--el-border-color-light);
+  display: flex;
+  justify-content: flex-end;
 }
 
+/* 对话框样式 */
 :deep(.el-dialog) {
   border-radius: 8px;
-  margin: 0 auto;
-}
-
-:deep(.el-form-item) {
-  margin-bottom: 22px;
-}
-
-:deep(.el-input) {
-  width: 100%;
-}
-
-/* 响应式样式优化 */
-@media screen and (max-width: 768px) {
-  .user-management {
-    margin: 0 16px;  /* 减小边距 */
-    padding: 16px 0;
+  
+  .el-dialog__header {
+    margin: 0;
+    padding: 20px;
+    border-bottom: 1px solid var(--el-border-color-light);
   }
-
-  .table-responsive {
-    padding: 16px 16px 0;
+  
+  .el-dialog__body {
+    padding: 20px;
   }
-
-  .pagination-container {
-    padding: 16px;
-    justify-content: center;  /* 在移动端居中显示分页 */
+  
+  .el-dialog__footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--el-border-color-light);
   }
 }
 
-@media screen and (max-width: 576px) {
-  .user-management {
-    margin: 0 12px;
-    padding: 12px 0;
-  }
-
-  .table-responsive {
-    padding: 12px 12px 0;
-  }
-
-  .pagination-container {
-    padding: 12px;
-  }
+.admin-tip {
+  margin-top: 8px;
 }
 
-/* 暗黑模式适配 */
+/* 深色模式适配 */
 :deep(.dark) {
   .table-card {
     background-color: var(--el-bg-color-overlay);
     border-color: var(--el-border-color-darker);
   }
-
+  
   .card-header {
     background-color: var(--el-bg-color-overlay);
-    border-color: var(--el-border-color-darker);
   }
-
+  
+  .card-header,
   .pagination-container {
     border-color: var(--el-border-color-darker);
+  }
+  
+  .el-dialog {
+    background-color: var(--el-bg-color-overlay);
+    
+    .el-dialog__header,
+    .el-dialog__footer {
+      border-color: var(--el-border-color-darker);
+    }
+  }
+}
+
+/* 响应式布局适配 */
+@media screen and (max-width: 768px) {
+  .user-management {
+    padding: 16px;
+  }
+  
+  .table-card {
+    margin: 0;
+  }
+  
+  .card-header {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    
+    .header-left {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+      
+      .filter-container {
+        width: 100%;
+        flex-direction: column;
+        
+        .filter-select {
+          width: 100%;
+        }
+      }
+    }
+  }
+  
+  .table-responsive {
+    padding: 16px;
+  }
+  
+  .pagination-container {
+    padding: 12px 16px;
+    justify-content: center;
   }
 }
 </style> 

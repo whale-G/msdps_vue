@@ -85,22 +85,17 @@
             <span class="category-text">系统管理</span>
           </span>
         </div>
-          <el-sub-menu index="/system" v-if="userStore.isAdmin">
-            <template #title>
-              <el-icon><Setting /></el-icon>
-              <span>系统管理</span>
-            </template>
-            <el-tooltip
-              content="用户管理"
-              placement="right"
-              :disabled="!isCollapse"
-            >
-              <el-menu-item index="/system/user">
-                <el-icon><User /></el-icon>
-                <span>用户管理</span>
-              </el-menu-item>
-            </el-tooltip>
-          </el-sub-menu>
+        <el-tooltip
+          content="用户管理"
+          placement="right"
+          :disabled="!isCollapse"
+        >
+          <el-menu-item index="/system/user">
+            <el-icon><User /></el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
+        </el-tooltip>
+
         <div class="menu-spacer"></div>
 
         <div class="menu-category" :class="{ 'collapsed': isCollapse }">
@@ -291,7 +286,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  User, Lock, HomeFilled, Setting, UserFilled,
+  User, HomeFilled, Setting, UserFilled,
   Key, SwitchButton, Expand, Fold,
   Document, ArrowDown, Moon, Sunny, Tools, Minus, QuestionFilled
 } from '@element-plus/icons-vue'
@@ -544,28 +539,16 @@ const toggleTheme = () => {
 
 // 组件挂载时添加事件监听
 onMounted(() => {
-  // 获取保存的主题设置或使用系统主题
+  // 获取保存的主题设置，如果没有则默认使用浅色主题
   const savedTheme = localStorage.getItem('theme')
   if (savedTheme) {
     setTheme(savedTheme === 'dark')
   } else {
-    setTheme(checkSystemTheme())
+    // 默认使用浅色主题
+    setTheme(false)
   }
 
-  // 监听系统主题变化
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  const handleThemeChange = (e) => {
-    if (!localStorage.getItem('theme')) {
-      setTheme(e.matches)
-    }
-  }
-  mediaQuery.addListener(handleThemeChange)
-
-  // 清理监听器
-  onUnmounted(() => {
-    mediaQuery.removeListener(handleThemeChange)
-  })
-
+  // 移除系统主题变化监听
   document.addEventListener('keydown', handleKeydown)
 
   // 组件挂载时检查是否需要强制修改密码

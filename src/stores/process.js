@@ -340,9 +340,9 @@ export const useProcessStore = defineStore('process', {
         const oputputFileName = this.generateFileName(pageName)
         const fileType = this.getCurrentPageSelectedType(pageName)
         
-        console.log("当前页面", pageName)
-        console.log("当前类型", fileType)
-        console.log("当前数据", currentPageData)
+        // console.log("当前页面", pageName)
+        // console.log("当前类型", fileType)
+        // console.log("当前数据", currentPageData)
 
         if (settings.mergeFiles) {
           // 合并模式：将所有结果保存在一个文件的不同工作表中

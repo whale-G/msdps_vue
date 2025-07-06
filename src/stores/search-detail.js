@@ -107,7 +107,7 @@ export const useSearchDetailStore = defineStore('search-detail', {
         default:
           processedData = { single_results: [], total_result: [], type: "未知" }
       }
-      console.log("当前search-detail处理结果", processedData)
+      // console.log("当前search-detail处理结果", processedData)
 
       return processedData
     }
@@ -139,7 +139,7 @@ export const useSearchDetailStore = defineStore('search-detail', {
         if (!this.processResult || !this.detailData) return
         
         const processStore = useProcessStore()
-        console.log("当前存储数据", this.processResult)
+        // console.log("当前存储数据", this.processResult)
         processStore.setPageData(
           'search-detail',
           this.detailData,

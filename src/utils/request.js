@@ -24,7 +24,7 @@ NProgress.configure({
 // 生产环境-服务器（.env文件会在部署时自动创建，并获取服务器IP）
 const service = axios.create({
   // 从环境变量获取baseURL，如果未设置则使用相对路径
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: window.__RUNTIME_CONFIG__.VITE_API_BASE_URL,
   timeout: 600000  // 设置为10分钟
 })
 // console.log('API Base URL:',import.meta.env.VITE_API_BASE_URL)
